@@ -52,6 +52,19 @@ Humidity: 77
 Battery-Level: 99
 ```
 
+### More info
+If you like gatttool you can use it, too. However it didn't notice when BT connection was lost, while this Python-Script automatically reestablishes the connection.
+```
+gatttool -I
+connect AA:BB:CC:DD:EE:FF
+#enable notifications
+char-write-req 0x0038 0100
+#Read battery-Level, consider: note value is in Hex format
+char-read-hnd 0x001b
+```
+
+
+
 ## To come
 Implementing a correction/calibrating function for Humidity
 
