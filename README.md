@@ -63,7 +63,7 @@ char-write-req 0x0038 0100
 char-read-hnd 0x001b
 ```
 
-
+Strictly speaking enabling notifications every time is not necessary since the device remembers it between connects. However to make it always work the Python-Script enables them upon every connection establishment.
 
 ## To come
 Implementing a correction/calibrating function for Humidity
