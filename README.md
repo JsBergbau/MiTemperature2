@@ -50,7 +50,7 @@ Humidity: 77
 Battery-Level: 99
 ```
 
-##To come
+## To come
 Implementing a correction/calibrating function for Humidity
 
 
