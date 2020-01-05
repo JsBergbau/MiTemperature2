@@ -21,10 +21,12 @@ optional arguments:
   Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
   In order to save power: It is recommended to read the battery level quite seldom. When using the --battery option Battery-Level is always read on the first run.
   
+  
   ## Tipps
   Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
+  This sensor only sends its measurements only via notifications. There are quite often notifications because the temperature is measured with a precision of 2 decimal places, but only one shown on the display (and this value is truncated, see above). Trying to directly read/poll the characteristics returns always zeroes. 
   
-  ##Sample output
+  ## Sample output
 ```  
  ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -r -b 5
 Trying to connect to AA:BB:CC:DD:EE:FF
