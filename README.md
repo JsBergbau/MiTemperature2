@@ -4,7 +4,7 @@ With this script you can read out the value of your LYWSD03MMC sensor. Note Rasp
 ## Prequisites
 python3 bluez python3-pip bluepy
 `install via sudo apt install python3 bluez python3-pip`
-pip3 install bluepy
+`pip3 install bluepy`
 
 ## Usage
 ```
@@ -25,7 +25,7 @@ optional arguments:
   Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
   
   ##Sample output
-  
+```  
  ./Xiaomi.py -d AA:BB:CC:DD:EE:FF -r -b 5
 Trying to connect to AA:BB:CC:DD:EE:FF
 Waiting...
@@ -48,7 +48,7 @@ Humidity: 77
 Temperature: 20.1
 Humidity: 77
 Battery-Level: 99
-
+```
 ##To come
 Implementing a correction/calibrating function for Humidity
 
