@@ -65,6 +65,12 @@ char-read-hnd 0x001b
 
 Strictly speaking enabling notifications every time is not necessary since the device remembers it between connects. However to make it always work the Python-Script enables them upon every connection establishment.
 
+Notification format
+`Notification handle = 0x0036 value: f8 07 4a d6 0b`
+f8 07 is the temperature as INT16 in little endian format. Divide it by 100 to get the temperature in degree Celsius
+4a is the humidity. Only integer output :(
+d6 and 0b are unknown to me. Tell me if you know what these values mean.
+
 ## To come
 Implementing a correction/calibrating function for Humidity
 
