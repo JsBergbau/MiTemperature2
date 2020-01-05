@@ -18,7 +18,7 @@ class MyDelegate(btle.DefaultDelegate):
 				#print("Temperatur unrounded: " + str(temp))
 				temp=round(temp,1)
 			humidity=int.from_bytes(data[2:3],byteorder='little')
-			print("Temperatur: " + str(temp))
+			print("Temperature: " + str(temp))
 			print("Humidity: " + str(humidity))
 			#print(data)
 		except:
