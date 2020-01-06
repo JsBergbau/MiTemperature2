@@ -40,7 +40,7 @@ class MyDelegate(btle.DefaultDelegate):
 					humidityCalibrated = 100
 				elif (humidityCalibrated < 0):
 					humidityCalibrated = 0
-				humidityCalibrated=round(humidityCalibrated,0)
+				humidityCalibrated=int(round(humidityCalibrated,0))
 				print("Calibrated humidity: " + str(humidityCalibrated))
 
 			#print(data)
