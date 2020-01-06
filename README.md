@@ -100,17 +100,20 @@ sudo hciconfig hci0 up
 ```
 
 ## Calibration
-Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Wait about 24 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year.
+Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive. 
+Wait about 24 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year.
 
 ### Offset calibration
 E.g. mine shows 79 % RH when actually there is 75 %. Excecute the script with `-o -4` to substract 4 from the readout value.
 
 ### Two point calibration
-The offset is not linear over the whole humidity values. So you should calibrate at another point. MagnesiumChloride is recommended giving about 33% RH at 20 °C. Also Calciumchloride is suitable, but temperaturestability is more critical. Be sure to have 20 °C. https://www.salzwiki.de/index.php/Deliqueszenzfeuchte
-The Xiaomi Bluetooth thermometer shows 39% RH at 33% RH. So wie here have an offset of 6.
+The offset is not linear over the whole humidity values. So you should calibrate at another point. MagnesiumChloride is recommended giving about 33% RH at 20 °C. Also Calciumchloride is suitable, but the humidity depends more on temperature. Be sure to have 20 °C. https://www.salzwiki.de/index.php/Deliqueszenzfeuchte
+ 
+My Xiaomi Bluetooth thermometer shows 39% RH at 33% RH. So wie here have an offset of 6.
 Another hygrometer show 69 % at 75% RH and 33% RH at 33% RH. So offset +6 at 75% TH and offset 0 at 33% RH.
 Example for the Xiaomi to use 2 point calibration:
 At 75% RH you have to substract 4 from the readout value, at 33% RH you have to substract 6.
+
 `-2p -p2 75 -o2 -4 -p1 33 -o1 -6`
 ```
 -2p: Enables 2 point calibration
@@ -119,6 +122,7 @@ At 75% RH you have to substract 4 from the readout value, at 33% RH you have to 
 -p1 33: Point 2 at 33% RH
 -o1 -6: Offset -6 at Point 2
 ```
+
 Note the values in between are interpolated linear and the result is rounded to the nearest whole number. It makes no sense to give floatingpoint number when the input is none.
 
 Output example:
