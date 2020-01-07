@@ -8,7 +8,9 @@ For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your 
 
 Prequisites: python3 bluez python3-pip bluepy
 install via
+
 `sudo apt install python3 bluez python3-pip`
+
 `pip3 install bluepy`
 
 
