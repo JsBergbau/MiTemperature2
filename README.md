@@ -4,11 +4,11 @@ With this script you can read out the value of your LYWSD03MMC sensor, e.g. with
 ## Prequisites / Requirements
 You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py
 
-For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/
+For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/ If doing so: Omit the rpi-update step.
 
 Prequisites: python3 bluez python3-pip bluepy
-`install via sudo apt install python3 bluez python3-pip`
-
+install via
+`sudo apt install python3 bluez python3-pip`
 `pip3 install bluepy`
 
 
