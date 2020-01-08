@@ -162,16 +162,15 @@ def connect():
 
 # Main loop --------
 parser=argparse.ArgumentParser()
-parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF")
-parser.add_argument("--battery","-b", help="Read batterylevel every x update", metavar='N', type=int)
-parser.add_argument("--round","-r", help="Round temperature to one decimal place",action='store_true')
-parser.add_argument("--name","-n", help="Give this sensor a name, used at callback function")
-parser.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
-parser.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
-parser.add_argument("--debounce","-deb", help="Enable this option for storing temperature with less noise",action='store_true')
+parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
+parser.add_argument("--battery","-b", help="Read batterylevel every Nth update", metavar='N', type=int)
+
+rounding = parser.add_argument_group("Rounding and debouncing")
+rounding.add_argument("--round","-r", help="Round temperature to one decimal place",action='store_true')
+rounding.add_argument("--debounce","-deb", help="Enable this option to get more stable temperature values, requires -r option",action='store_true')
 
 offsetgroup = parser.add_argument_group("Offset calibration mode")
-offsetgroup.add_argument("--offset","-o", help="Enter an offset to the humidity value read",type=int)
+offsetgroup.add_argument("--offset","-o", help="Enter an offset to the reported humidity value",type=int)
 
 complexCalibrationGroup=parser.add_argument_group("2 Point Calibration")
 complexCalibrationGroup.add_argument("--TwoPointCalibration","-2p", help="Use complex calibration mode. All arguments below are required",action='store_true')
@@ -179,6 +178,11 @@ complexCalibrationGroup.add_argument("--calpoint1","-p1", help="Enter the first 
 complexCalibrationGroup.add_argument("--offset1","-o1", help="Enter the offset for the first calibration point",type=int)
 complexCalibrationGroup.add_argument("--calpoint2","-p2", help="Enter the second calibration point",type=int)
 complexCalibrationGroup.add_argument("--offset2","-o2", help="Enter the offset for the second calibration point",type=int)
+
+callbackgroup = parser.add_argument_group("Callback related functions")
+callbackgroup.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
+callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported to the callback script")
+callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
 
 args=parser.parse_args()
 if args.device:
