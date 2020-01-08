@@ -85,7 +85,7 @@ class MyDelegate(btle.DefaultDelegate):
 		try:
 			measurement = Measurement(0,0,0,0,0)
 			measurement.timestamp = int(time.time())
-			temp=int.from_bytes(data[0:2],byteorder='little')/100
+			temp=int.from_bytes(data[0:2],byteorder='little',signed=True)/100
 			#print("Temp received: " + str(temp))
 			if args.round:
 				#print("Temperatur unrounded: " + str(temp
