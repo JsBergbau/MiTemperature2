@@ -1,8 +1,12 @@
 #  Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor
 With this script you can read out the value of your LYWSD03MMC sensor, e.g. with Raspberry PI. Note Raspbery Pi 4 has a very limited bluetooth range. PI Zero W gives much longer range.
 
+This sensor doesn't transmit its values in the advertisment data, like the LYWSDCGQ Bluetooth thermometer. This is more privacy friendly since no one can sniff your temperature readings. On the other side this means you have to establish a bluetooth connection with the device to get the data. When you're connected no other connection is accepted, meaning if you hold the connection no other can readout your temperature and humidity.
+
+Once you're connected the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
+
 ## Prequisites / Requirements
-You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py
+You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
 
 For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/ If doing so: Omit the rpi-update step.
 
@@ -16,27 +20,26 @@ install via
 
 ## Usage
 ```
-./LYWSD03MMC.py
-usage: LYWSD03MMC.py [-h] [--device DEVICE] [--battery N] [--round]
-                     [--name NAME] [--callback CALLBACK] [--offset OFFSET]
-                     [--TwoPointCalibration] [--calpoint1 CALPOINT1]
-                     [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
-                     [--offset2 OFFSET2]
+ LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery N] [--round]
+                     [--debounce] [--offset OFFSET] [--TwoPointCalibration]
+                     [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
+                     [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
+                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --device DEVICE, -d DEVICE
-                        Set the device MAC-Adress in format AA:BB:CC:DD:EE:FF
-  --battery N, -b N     Read batterylevel every x update
+  --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
+                        Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
+  --battery N, -b N     Read batterylevel every Nth update
+
+Rounding and debouncing:
   --round, -r           Round temperature to one decimal place
-  --name NAME, -n NAME  Give this sensor a name, used at callback function
-  --callback CALLBACK, -call CALLBACK
-                        Pass the path to a program/script that will be called
-                        on each new measurement
+  --debounce, -deb      Enable this option to get more stable temperature
+                        values, requires -r option
 
 Offset calibration mode:
   --offset OFFSET, -o OFFSET
-                        Enter an offset to the humidity value read
+                        Enter an offset to the reported humidity value
 
 2 Point Calibration:
   --TwoPointCalibration, -2p
@@ -50,6 +53,17 @@ Offset calibration mode:
                         Enter the second calibration point
   --offset2 OFFSET2, -o2 OFFSET2
                         Enter the offset for the second calibration point
+
+Callback related functions:
+  --callback CALLBACK, -call CALLBACK
+                        Pass the path to a program/script that will be called
+                        on each new measurement
+  --name NAME, -n NAME  Give this sensor a name reported to the callback
+                        script
+  --skipidentical N, -skip N
+                        N consecutive identical measurements won't be reported
+                        to callbackfunction
+
   ```
   
   Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
@@ -59,6 +73,9 @@ Offset calibration mode:
   ## Tipps
   Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
   This sensor only sends its measurements only via notifications. There are quite often notifications because the temperature is measured with a precision of 2 decimal places, but only one shown on the display (and this value is truncated, see above). Trying to directly read/poll the characteristics returns always zeroes. 
+  
+  ### Debouncing
+  The temperature values often change between the same values. To get cleaner temperature curves a debouncing function has been implemented. See here https://github.com/JsBergbau/MiTemperature2/issues/2 for more info.
   
   ## Sample output
 ```  
@@ -106,7 +123,7 @@ f8 07 is the temperature as INT16 in little endian format. Divide it by 100 to g
 d6 and 0b are unknown to me. Tell me if you know what these values mean.
 
 ### Troubleshooting
-Sometimes script immediately fails to connect and quits. Seems to be a problem with the bluetooth stack. To resolve:
+Very seldom script fails to connect and tries to connect forever. Seems to be a problem with the bluetooth stack. To resolve:
 ```
 sudo hciconfig hci0 down
 sudo hciconfig hci0 up
@@ -163,12 +180,14 @@ Example callback
 #!/bin/bash
 echo $@ >> data.txt
 ```
-Gives in data.txt `sensorname,temperature,humidity,humidityCalibrated,batteryLevel MySensor 20.19 39 33 99`
+Gives in data.txt `sensorname,temperature,humidity,humidityCalibrated,batteryLevel,timestamp MySensor 20.19 39 33 99 1578485287`
 
-If successive measurements contain the same data no data is send. So only changed data is reported to the callback. It is recommended to use the --round option, otherwise there is a lot of noise with changing the temperature in the second decimal place. 
+Whereas the timestamp is in the Unix timestamp format in UTC (seconds since 1.1.1970 00:00). 
+
+There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values have been read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
 
 Because of the implementation batterylevel is read after the first data received from sensor. This means after startup the first batteryvalue reported is always zero. After the second temperature reading the correct batterie value is passed to the callback function and updated via the --battery Option
 
 All data received from the sensor is stored in a list and transmitted sequentially. This means if your backend like influxdb is not reachable when a new measurement is received, it will be tried again later (currently waiting 5 seconds before the next try). Thus no data is lost when your storage engine has some trouble. There is no upper limit (the only limit should be the RAM). Keep this in mind when specifing a wrong backend. 
 
-"sendToInflux.sh" is an example script for sending the data to influxdb via http-API. 
+"sendToInflux.sh" is an example script for sending the data to influxdb via http-API. Precision was set to the level of seconds. This gives better compression ratios in influxdb.
