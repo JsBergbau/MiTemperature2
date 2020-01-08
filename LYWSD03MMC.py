@@ -10,6 +10,7 @@ import threading
 import time
 import signal
 import traceback
+import math
 
 
 @dataclass
@@ -18,6 +19,7 @@ class Measurement:
 	humidity: int
 	calibratedHumidity: int = 0
 	battery: int = 0
+	timestamp: int = 0
 
 	def __eq__(self, other):
 		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery:
@@ -28,19 +30,23 @@ class Measurement:
 measurements=deque()
 globalBatteryLevel=0
 previousMeasurement=Measurement(0,0,0,0)
+identicalCounter=0
 
 def signal_handler(sig, frame):
         os._exit(0)
 
 def thread_SendingData():
 	global previousMeasurement
+	global measurements
 	path = os.path.dirname(os.path.abspath(__file__))
 	while True:
 		try:
-			mea = measurements.pop()
-			if (mea == previousMeasurement): #only send data when it has changed
-				print("Measurements are identical don't send data")
+			mea = measurements.popleft()
+			if (mea == previousMeasurement and identicalCounter < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 pakets per minute, 50 pakets --> writing at least every 5 minutes
+				print("Measurements are identical don't send data\n")
+				identicalCounter+=1
 				continue
+			identicalCounter=0
 			fmt = "sensorname,temperature,humidity" #don't try to seperate by semicolon ';' os.system will use that as command seperator
 			params = args.name + " " + str(mea.temperature) + " " + str(mea.humidity)
 			if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
@@ -49,6 +55,8 @@ def thread_SendingData():
 			if (args.battery):
 				fmt +=",batteryLevel"
 				params += " " + str(mea.battery)
+			params += " " + str(mea.timestamp)
+			fmt +=",timestamp"
 			cmd = path + "/" + args.callback + " " + fmt + " " + params
 			print(cmd)
 			ret = os.system(cmd)
@@ -57,7 +65,7 @@ def thread_SendingData():
 					print ("Data couln't be send to Callback, retrying...")
 					time.sleep(5) #wait before trying again
 			else: #data was sent
-				previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.calibratedHumidity,mea.battery) #using copy or deepcopy requires implementation in the class definition
+				previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
 
 		except IndexError:
 			#print("Keine Daten")
@@ -66,19 +74,43 @@ def thread_SendingData():
 			print(e)
 			print(traceback.format_exc())
 
-
+mode="round"
 class MyDelegate(btle.DefaultDelegate):
 	def __init__(self, params):
 		btle.DefaultDelegate.__init__(self)
 		# ... initialise here
-
+	
 	def handleNotification(self, cHandle, data):
+		global measurements
 		try:
-			measurement = Measurement
+			measurement = Measurement(0,0,0,0,0)
+			measurement.timestamp = int(time.time())
 			temp=int.from_bytes(data[0:2],byteorder='little')/100
+			#print("Temp received: " + str(temp))
 			if args.round:
-				#print("Temperatur unrounded: " + str(temp))
-				temp=round(temp,1)
+				#print("Temperatur unrounded: " + str(temp
+				
+				if args.debounce:
+					global mode
+					temp*=10
+					intpart = math.floor(temp)
+					fracpart = round(temp - intpart,1)
+					#print("Fracpart: " + str(fracpart))
+					if fracpart >= 0.7:
+						mode="ceil"
+					elif fracpart <= 0.2: #either 0.8 and 0.3 or 0.7 and 0.2 for best even distribution
+						mode="trunc"
+					#print("Modus: " + mode)
+					if mode=="trunc": #only a few times
+						temp=math.trunc(temp)
+					elif mode=="ceil":
+						temp=math.ceil(temp)
+					else:
+						temp=round(temp,0)
+					temp /=10.
+					#print("Debounced temp: " + str(temp))
+				else:
+					temp=round(temp,1)
 			humidity=int.from_bytes(data[2:3],byteorder='little')
 			print("Temperature: " + str(temp))
 			print("Humidity: " + str(humidity))
@@ -117,7 +149,7 @@ class MyDelegate(btle.DefaultDelegate):
 		except Exception as e:
 			print("Fehler")
 			print(e)
-			#print(traceback.format_exc())
+			print(traceback.format_exc())
 		
 # Initialisation  -------
 
@@ -135,6 +167,8 @@ parser.add_argument("--battery","-b", help="Read batterylevel every x update", m
 parser.add_argument("--round","-r", help="Round temperature to one decimal place",action='store_true')
 parser.add_argument("--name","-n", help="Give this sensor a name, used at callback function")
 parser.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
+parser.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
+parser.add_argument("--debounce","-deb", help="Enable this option for storing temperature with less noise",action='store_true')
 
 offsetgroup = parser.add_argument_group("Offset calibration mode")
 offsetgroup.add_argument("--offset","-o", help="Enter an offset to the humidity value read",type=int)
@@ -174,9 +208,15 @@ if args.callback:
 	signal.signal(signal.SIGINT, signal_handler)
 	dataThread = threading.Thread(target=thread_SendingData)
 	dataThread.start()
+	
+connected=False
 
 while True:
 	try:
+		if not connected:
+			print("Trying to connect to " + adress)
+			p=connect()
+			connected=True
 		if p.waitForNotifications(2000):
 			# handleNotification() was called
 			if args.battery:
@@ -189,8 +229,8 @@ while True:
 			print("")
 			continue
 	except:
-		print("Trying to connect to " + adress)
-		p=connect()
+		print("Connection lost")
+		connected=False
 		
 	print ("Waiting...")
 	# Perhaps do something else here
