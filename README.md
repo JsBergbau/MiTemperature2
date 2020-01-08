@@ -77,6 +77,9 @@ Callback related functions:
   ### Debouncing
   The temperature values often change between the same values. To get cleaner temperature curves a debouncing function has been implemented. See here https://github.com/JsBergbau/MiTemperature2/issues/2 for more info.
   
+  ### Minus degrees
+When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. I can confirm this sensor also goes down to -9.9 °C. At colder temperatures it only shows an "L". But the correct data is still sent! So you even could use ist to watch the temperature in your freezer. However batterylife may be significantly reduced at those low temperatures.
+  
   ## Sample output
 ```  
  ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -r -b 5
@@ -118,7 +121,7 @@ Strictly speaking enabling notifications every time is not necessary since the d
 
 Notification format
 `Notification handle = 0x0036 value: f8 07 4a d6 0b`
-f8 07 is the temperature as INT16 in little endian format. Divide it by 100 to get the temperature in degree Celsius
+f8 07 is the temperature as signed INT16 in little endian format. Divide it by 100 to get the temperature in degree Celsius
 4a is the humidity. Only integer output :(
 d6 and 0b are unknown to me. Tell me if you know what these values mean.
 
