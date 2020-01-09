@@ -209,10 +209,10 @@ p=btle.Peripheral()
 cnt=0
 
 if args.callback:
-	signal.signal(signal.SIGINT, signal_handler)
 	dataThread = threading.Thread(target=thread_SendingData)
 	dataThread.start()
 	
+signal.signal(signal.SIGINT, signal_handler)	
 connected=False
 
 while True:
