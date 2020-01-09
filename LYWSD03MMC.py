@@ -232,8 +232,11 @@ while True:
 			cnt += 1
 			print("")
 			continue
-	except:
+	except Exception as e:
 		print("Connection lost")
+		time.sleep(1)
+		#print(e)
+		#print(traceback.format_exc())
 		connected=False
 		
 	print ("Waiting...")
