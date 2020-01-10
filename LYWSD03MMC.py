@@ -214,13 +214,26 @@ if args.callback:
 	
 signal.signal(signal.SIGINT, signal_handler)	
 connected=False
-
+connectionErrorCounter=0
 while True:
 	try:
 		if not connected:
+			if connectionErrorCounter >= 5: #Bluepy sometimes crashes and makes it even impossible to connect with gatttool as long it is running
+				pid=os.getpid()				#if there are too many connection errors in a row, we just kill bluepy, making the script work again
+				pstree=os.popen("pstree -p " + str(pid)).read() #we kill only bluepy from our own process tree
+				try:
+					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0]
+				except IndexError:
+					bluepypid=0
+				if bluepypid != 0:
+					os.system("kill " + bluepypid)
+					print("Killed bluepy, connecting should now work again")
+				else:
+					print("bluepy not running (yet), nothing to kill")
 			print("Trying to connect to " + adress)
 			p=connect()
 			connected=True
+			connectionErrorCounter=0
 		if p.waitForNotifications(2000):
 			# handleNotification() was called
 			if args.battery:
@@ -235,8 +248,9 @@ while True:
 	except Exception as e:
 		print("Connection lost")
 		time.sleep(1)
-		#print(e)
-		#print(traceback.format_exc())
+		print(e)
+		print(traceback.format_exc())
+		connectionErrorCounter+=1
 		connected=False
 		
 	print ("Waiting...")
