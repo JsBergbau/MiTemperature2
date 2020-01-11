@@ -11,7 +11,7 @@ import time
 import signal
 import traceback
 import math
-
+import logging
 
 @dataclass
 class Measurement:
@@ -164,6 +164,7 @@ def connect():
 parser=argparse.ArgumentParser()
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
 parser.add_argument("--battery","-b", help="Read batterylevel every Nth update", metavar='N', type=int)
+parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 
 rounding = parser.add_argument_group("Rounding and debouncing")
 rounding.add_argument("--round","-r", help="Round temperature to one decimal place",action='store_true')
@@ -215,15 +216,21 @@ if args.callback:
 signal.signal(signal.SIGINT, signal_handler)	
 connected=False
 connectionErrorCounter=0
+logging.basicConfig(level=logging.CRITICAL)
+logging.debug("Debug: Starting script...")
+
 while True:
 	try:
 		if not connected:
 			if connectionErrorCounter >= 5: #Bluepy sometimes crashes and makes it even impossible to connect with gatttool as long it is running
 				pid=os.getpid()				#if there are too many connection errors in a row, we just kill bluepy, making the script work again
+				logging.debug("Own PID: "  + str(pid))
 				pstree=os.popen("pstree -p " + str(pid)).read() #we kill only bluepy from our own process tree
+				logging.debug("PSTree: " + pstree)
 				try:
 					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0]
 				except IndexError:
+					logging.debug("Couldn't find pid of bluepy-helper")
 					bluepypid=0
 				if bluepypid != 0:
 					os.system("kill " + bluepypid)
@@ -243,13 +250,16 @@ while True:
 					print("Battery-Level: " + str(batt))
 					globalBatteryLevel = batt
 			cnt += 1
+			if args.count is not None and cnt >= args.count:
+				print(str(args.count) + " measurements collected. Exiting now.")
+				os._exit(0)
 			print("")
 			continue
 	except Exception as e:
 		print("Connection lost")
 		time.sleep(1)
-		print(e)
-		print(traceback.format_exc())
+		#print(e)
+		#print(traceback.format_exc())
 		connectionErrorCounter+=1
 		connected=False
 		
