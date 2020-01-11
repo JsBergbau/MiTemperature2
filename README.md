@@ -20,17 +20,19 @@ install via
 
 ## Usage
 ```
- LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery N] [--round]
-                     [--debounce] [--offset OFFSET] [--TwoPointCalibration]
-                     [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
-                     [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
-                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
+usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery N]
+                     [--count N] [--round] [--debounce] [--offset OFFSET]
+                     [--TwoPointCalibration] [--calpoint1 CALPOINT1]
+                     [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
+                     [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
+                     [--skipidentical N]
 
 optional arguments:
   -h, --help            show this help message and exit
   --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
   --battery N, -b N     Read batterylevel every Nth update
+  --count N, -c N       Read/Receive N measurements and then exit script
 
 Rounding and debouncing:
   --round, -r           Round temperature to one decimal place
@@ -63,11 +65,13 @@ Callback related functions:
   --skipidentical N, -skip N
                         N consecutive identical measurements won't be reported
                         to callbackfunction
-
   ```
   
-  Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
-  In order to save power: It is recommended to read the battery level quite seldom. When using the --battery option Battery-Level is always read on the first run.
+Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
+
+In order to save power: It is recommended to read the battery level quite seldom. When using the --battery option Battery-Level is always read on the first run.
+
+The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
   
   
   ## Tipps
@@ -126,11 +130,15 @@ f8 07 is the temperature as signed INT16 in little endian format. Divide it by 1
 d6 and 0b are unknown to me. Tell me if you know what these values mean.
 
 ### Troubleshooting
-Very seldom script fails to connect and tries to connect forever. Seems to be a problem with the bluetooth stack. To resolve:
+Sometimes script fails to connect and tries to connect forever.
+Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
+
+If that doesn't help, a problem with the bluetooth stack could be the cause. To resolve:
 ```
 sudo hciconfig hci0 down
 sudo hciconfig hci0 up
 ```
+
 
 ## Calibration
 Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive. 
