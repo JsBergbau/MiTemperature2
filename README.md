@@ -10,6 +10,8 @@ You need Python3 3.7 or above because of the dataclasses used in the Callback Fu
 
 For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/ If doing so: Omit the rpi-update step.
 
+If you like installing/compiling Python3.7 please take a look at this tutorial https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d However it took about 5 hours to compile/run the regressiontests on a Raspberry PI3B. I use this compiled version directly without install. If you do, too, you have to change the first line in the script, pointing to your compiled Python version. For bluepy you can copy the bluepy-folder from home/pi/.local/lib/python3.7/site-packages/bluepy to <yourPath>Python-3.7.4/Lib and do a chmod +x bluepy-helper in <yourPath>Python-3.7.4/Lib/bluepy
+
 Prequisites: python3 bluez python3-pip bluepy
 install via
 
@@ -132,6 +134,8 @@ d6 and 0b are unknown to me. Tell me if you know what these values mean.
 ### Troubleshooting
 Sometimes script fails to connect and tries to connect forever.
 Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
+
+Since version 1.1 there is a watchdog-Thread checking when connection is lost for at least 60 seconds and then killing the corresponding bluepy-helper, so that other connections aren't affected. This is a workaround for an obvious bug in bluepy. This bug only occured so far when trying to (re)connect. Then this call to bluepy blocks sometimes forever.
 
 If that doesn't help, a problem with the bluetooth stack could be the cause. To resolve:
 ```
