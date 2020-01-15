@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+#!/home/openhabian/Python3/Python-3.7.4/python -u
+#-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
 from bluepy import btle
 import argparse
@@ -34,6 +35,29 @@ identicalCounter=0
 
 def signal_handler(sig, frame):
         os._exit(0)
+		
+def watchDog_Thread():
+	global unconnectedTime
+	global connected
+	global pid
+	while True:
+		logging.debug("watchdog_Thread")
+		logging.debug("unconnectedTime : " + str(unconnectedTime))
+		logging.debug("connected : " + str(connected))
+		logging.debug("pid : " + str(pid))
+		now = int(time.time())
+		if (unconnectedTime is not None) and ((now - unconnectedTime) > 60): #could also check connected is False, but this is more fault proof
+			pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+			logging.debug("PSTree: " + pstree)
+			try:
+				bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+			except IndexError: #Should not happen since we're now connected
+				logging.debug("Couldn't find pid of bluepy-helper")
+			os.system("kill " + bluepypid)
+			logging.debug("Killed bluepy with pid: " + str(bluepypid))
+			unconnectedTime = now #reset unconnectedTime to prevent multiple killings in a row
+		time.sleep(5)
+	
 
 def thread_SendingData():
 	global previousMeasurement
@@ -215,32 +239,40 @@ if args.callback:
 	
 signal.signal(signal.SIGINT, signal_handler)	
 connected=False
-connectionErrorCounter=0
-logging.basicConfig(level=logging.CRITICAL)
+#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logging.debug("Debug: Starting script...")
+pid=os.getpid()	
+bluepypid=None
+unconnectedTime=None
+
+watchdogThread = threading.Thread(target=watchDog_Thread)
+watchdogThread.start()
+logging.debug("watchdogThread startet")
 
 while True:
 	try:
 		if not connected:
-			if connectionErrorCounter >= 5: #Bluepy sometimes crashes and makes it even impossible to connect with gatttool as long it is running
-				pid=os.getpid()				#if there are too many connection errors in a row, we just kill bluepy, making the script work again
-				logging.debug("Own PID: "  + str(pid))
-				pstree=os.popen("pstree -p " + str(pid)).read() #we kill only bluepy from our own process tree
-				logging.debug("PSTree: " + pstree)
-				try:
-					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0]
-				except IndexError:
-					logging.debug("Couldn't find pid of bluepy-helper")
-					bluepypid=0
-				if bluepypid != 0:
-					os.system("kill " + bluepypid)
-					print("Killed bluepy, connecting should now work again")
-				else:
-					print("bluepy not running (yet), nothing to kill")
+			#Bluepy sometimes hangs and makes it even impossible to connect with gatttool as long it is running
+			#on every new connection a new bluepy-helper is called
+			#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
+			# if bluepypid is not None:
+				# os.system("kill " + bluepypid)
+				# print("Killed possibly remaining bluepy-helper")
+			# else:
+				# print("bluepy-helper couldn't be determined, killing not allowed")
+					
 			print("Trying to connect to " + adress)
 			p=connect()
+			# logging.debug("Own PID: "  + str(pid))
+			# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+			# logging.debug("PSTree: " + pstree)
+			# try:
+				# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+			# except IndexError: #Should not happen since we're now connected
+				# logging.debug("Couldn't find pid of bluepy-helper")				
 			connected=True
-			connectionErrorCounter=0
+			unconnectedTime=None			
 		if p.waitForNotifications(2000):
 			# handleNotification() was called
 			if args.battery:
@@ -252,16 +284,18 @@ while True:
 			cnt += 1
 			if args.count is not None and cnt >= args.count:
 				print(str(args.count) + " measurements collected. Exiting now.")
+				p.disconnect()
 				os._exit(0)
 			print("")
 			continue
 	except Exception as e:
 		print("Connection lost")
+		if connected is True: #First connection abort after connected
+			unconnectedTime=int(time.time())
+			connected=False
 		time.sleep(1)
-		#print(e)
-		#print(traceback.format_exc())
-		connectionErrorCounter+=1
-		connected=False
+		logging.debug(e)
+		logging.debug(traceback.format_exc())		
 		
 	print ("Waiting...")
 	# Perhaps do something else here
