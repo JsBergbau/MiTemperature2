@@ -9,6 +9,9 @@ I've been willing to try docker on the pi zero as a way to "easyly" move applica
 #Usage:
 
 ## Building the docker image from base image (base image based on stretch + python 3.
+
+I published the base image in docker hub xavierrrr/xrrzero:stretchpython3.7
+
 ```
 docker built -t mitemperature2localimage . 
 ```
@@ -22,9 +25,10 @@ docker built -t mitemperature2localimage .
 sudo docker run --net=host -d -i -t mitemperature2localimage
 ```
 
-# Docker installation on a frech stretch/buster installation
+# Pi Zero Docker installation on a frech stretch/buster installation
 
-**I'm putting this here for quick reference
+**I'm putting this here for quick reference**
+
 ```
 sudo apt-get install apt-transport-https ca-certificates software-properties-common -y
 curl -fsSL get.docker.com -o get-docker.sh && sh get-docker.sh
