@@ -1,10 +1,5 @@
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
+# Start from a Python3.7 base image I published
 
-# Start from a Python3.7 
 FROM xavierrrr/xrrzero:stretchpython3.7 
 
 # http://bugs.python.org/issue19846
@@ -19,7 +14,8 @@ COPY ../sendtovera.py sendtovera.py
 
 ENTRYPOINT service dbus start
 
-##Change to the proper LYWSD03MMC call for your system
+#Change to the following line to match your needs
+
 ENTRYPOINT while true; do /usr/local/bin/python3.7m LYWSD03MMC.py -d A4:C1:38:7F:E6:DC -r -b 100 --skipidentical 50 -deb --callback sendtovera.py; sleep 2; done
 
-# start with sudo docker run --net=host -t your_image_name /bin/bash
+# start the created image with sudo docker run --net=host -t your_image_name /bin/bash
