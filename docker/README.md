@@ -6,13 +6,13 @@ It might be difficult and/or tedious to install all prereqs on a pi zero.
 
 I've been willing to try docker on the pi zero as a way to "easyly" move applications/functions from one pi to another without needing to care (as much as possible) of all the prerequisits and potentially conflicting other apps.
 
-* Usage:
+#Usage:
 
 ## Building the docker image from base image (base image based on stretch + python 3.
 docker built -t mitemperature2localimage . 
 
-** Update the Dockerfile with you sensor mac adress
-** Update the LYWSD03MMC.py command line for your use. The default file will invoke a simple callback python programs that is updating a vera verde box with sensor data.
+**Update the Dockerfile with you sensor mac adress**
+**Update the LYWSD03MMC.py command line for your use. The default file will invoke a simple callback python programs that is updating a vera verde box with sensor data.**
 
 ## Starting the docker image
 sudo docker run --net=host -d -i -t mitemperature2localimage
