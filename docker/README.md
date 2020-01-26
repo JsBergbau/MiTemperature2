@@ -13,7 +13,7 @@ I've been willing to try docker on the pi zero as a way to "easyly" move applica
 I published this base image as xavierrrr/xrrzero:stretchpython3.7 in dockerhub. 
 
 ```
-docker built -t mitemperature2localimage . 
+docker build -t mitemperature2localimage -f docker/Dockerfile .
 ```
 
 **Update the Dockerfile with you sensor mac adress**
