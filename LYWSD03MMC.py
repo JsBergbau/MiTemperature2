@@ -1,3 +1,4 @@
+#!/usr/bin/python3 -u
 #!/home/openhabian/Python3/Python-3.7.4/python -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
