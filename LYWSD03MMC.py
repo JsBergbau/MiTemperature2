@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -u
 #!/home/openhabian/Python3/Python-3.7.4/python -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
@@ -284,8 +283,9 @@ while True:
 					globalBatteryLevel = batt
 			cnt += 1
 			if args.count is not None and cnt >= args.count:
-				print(str(args.count) + " measurements collected. Exiting now.")
+				print(str(args.count) + " measurements collected. Exiting in a moment.")
 				p.disconnect()
+				time.sleep(5)
 				os._exit(0)
 			print("")
 			continue
