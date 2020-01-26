@@ -10,7 +10,9 @@ I've been willing to try docker on the pi zero as a way to "easyly" move applica
 
 ## Building the docker image from base image (base image based on stretch + python 3)
 
-I published this base image as xavierrrr/xrrzero:stretchpython3.7 in dockerhub. 
+I published the base image as xavierrrr/xrrzero:stretchpython3.7 in dockerhub. 
+
+Run the following docker build command from project root directory
 
 ```
 docker build -t mitemperature2localimage -f docker/Dockerfile .
