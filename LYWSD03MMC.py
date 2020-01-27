@@ -273,15 +273,19 @@ while True:
 			# except IndexError: #Should not happen since we're now connected
 				# logging.debug("Couldn't find pid of bluepy-helper")				
 			connected=True
-			unconnectedTime=None			
-		if p.waitForNotifications(2000):
-			# handleNotification() was called
-			if args.battery:
+			unconnectedTime=None
+			
+		if args.battery:
 				if(cnt % args.battery == 0):
 					batt=p.readCharacteristic(0x001b)
 					batt=int.from_bytes(batt,byteorder="little")
 					print("Battery-Level: " + str(batt))
 					globalBatteryLevel = batt
+			
+			
+		if p.waitForNotifications(2000):
+			# handleNotification() was called
+			
 			cnt += 1
 			if args.count is not None and cnt >= args.count:
 				print(str(args.count) + " measurements collected. Exiting in a moment.")
