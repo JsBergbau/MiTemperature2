@@ -22,7 +22,7 @@ install via
 
 ## Usage
 ```
-usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery N]
+usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--count N] [--round] [--debounce] [--offset OFFSET]
                      [--TwoPointCalibration] [--calpoint1 CALPOINT1]
                      [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
@@ -33,7 +33,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
-  --battery N, -b N     Read batterylevel every Nth update
+  --battery [], -b []   Get estimated battery level
   --count N, -c N       Read/Receive N measurements and then exit script
 
 Rounding and debouncing:
@@ -71,7 +71,7 @@ Callback related functions:
   
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
 
-In order to save power: It is recommended to read the battery level quite seldom. When using the --battery option Battery-Level is always read on the first run.
+Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894 . But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
 
 The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
   
@@ -88,28 +88,52 @@ When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °
   
   ## Sample output
 ```  
- ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -r -b 5
+ ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -r -b
 Trying to connect to AA:BB:CC:DD:EE:FF
-Waiting...
-Temperature: 20.1
-Humidity: 77
-Battery-Level: 99
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 
-Temperature: 20.1
-Humidity: 77
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 
-Temperature: 20.1
-Humidity: 77
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 
-Temperature: 20.1
-Humidity: 77
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 
-Temperature: 20.1
-Humidity: 77
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 
-Temperature: 20.1
-Humidity: 77
-Battery-Level: 99
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
+
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
+
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
+
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Battery level: 84
 ```
 
 ### More info
@@ -129,7 +153,7 @@ Notification format
 `Notification handle = 0x0036 value: f8 07 4a d6 0b`
 f8 07 is the temperature as signed INT16 in little endian format. Divide it by 100 to get the temperature in degree Celsius
 4a is the humidity. Only integer output :(
-d6 and 0b are unknown to me. Tell me if you know what these values mean.
+d6 and 0b are the battery voltage in Millivolts in little endian format.
 
 ### Troubleshooting
 Sometimes script fails to connect and tries to connect forever.
@@ -174,20 +198,27 @@ Output example:
 ```
 ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6
 Trying to connect to AA:BB:CC:DD:EE:FF
-Waiting...
-Temperature: 20.83
-Humidity: 39
-Calibrated humidity: 33
+Temperature: 20.62
+Humidity: 54
+Battery voltage: 2.944
+Calibrated humidity: 49
 
-Temperature: 20.82
-Humidity: 39
-Calibrated humidity: 33
+Temperature: 20.6
+Humidity: 54
+Battery voltage: 2.944
+Calibrated humidity: 49
+
+Temperature: 20.61
+Humidity: 54
+Battery voltage: 2.944
+Calibrated humidity: 49
+
 ```
 
 ## Callback for processing the data
 Via the --call option a script can be passed to sent the data to. 
 Example
-`./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 -b 5 --name MySensor --callback sendData.sh`
+`./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --callback sendData.sh`
 If you don't give the sensor a name, the MAC-Address is used. The callback script must be within the same folder as this script.
 The values outputted depends on the options like calibration or battery. So the format is printed in the first argument.
 Example callback
@@ -195,11 +226,11 @@ Example callback
 #!/bin/bash
 echo $@ >> data.txt
 ```
-Gives in data.txt `sensorname,temperature,humidity,humidityCalibrated,batteryLevel,timestamp MySensor 20.19 39 33 99 1578485287`
+Gives in data.txt `sensorname,temperature,humidity,voltage,humidityCalibrated,timestamp MySensor 20.61 54 2.944 49 1582120122`
 
 Whereas the timestamp is in the Unix timestamp format in UTC (seconds since 1.1.1970 00:00). 
 
-There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values have been read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
+There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values are read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
 
 All data received from the sensor is stored in a list and transmitted sequentially. This means if your backend like influxdb is not reachable when a new measurement is received, it will be tried again later (currently waiting 5 seconds before the next try). Thus no data is lost when your storage engine has some trouble. There is no upper limit (the only limit should be the RAM). Keep this in mind when specifing a wrong backend. 
 
