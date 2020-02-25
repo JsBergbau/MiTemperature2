@@ -188,7 +188,8 @@ class MyDelegate(btle.DefaultDelegate):
 def connect():
 	p = btle.Peripheral(adress)	
 	val=b'\x01\x00'
-	p.writeCharacteristic(0x0038,val,True)
+	p.writeCharacteristic(0x0038,val,True) #enable notifications of Temperature, Humidity and Battery voltage
+	p.writeCharacteristic(0x0046,b'\xf4\x01\x00',True)
 	p.withDelegate(MyDelegate("abc"))
 	return p
 
