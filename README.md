@@ -143,7 +143,9 @@ gatttool -I
 connect AA:BB:CC:DD:EE:FF
 #enable notifications
 char-write-req 0x0038 0100
-#Read battery-Level, consider: note value is in Hex format
+#enable lower power mode, please don't do when you want to interact with the device, because often then connection gets lost
+char-write-req 0x0046 f40100
+#Read battery-Level, just for reference, since it is always 99 consider: note value is in Hex format
 char-read-hnd 0x001b
 ```
 
@@ -154,6 +156,8 @@ Notification format
 f8 07 is the temperature as signed INT16 in little endian format. Divide it by 100 to get the temperature in degree Celsius
 4a is the humidity. Only integer output :(
 d6 and 0b are the battery voltage in Millivolts in little endian format.
+
+Lower power mode: To safe power the connection interval is reduced. For more details, please see this Issue https://github.com/JsBergbau/MiTemperature2/issues/18#issuecomment-590986874
 
 ### Troubleshooting
 Sometimes script fails to connect and tries to connect forever.
