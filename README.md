@@ -159,6 +159,8 @@ d6 and 0b are the battery voltage in Millivolts in little endian format.
 
 Lower power mode: To safe power the connection interval is reduced. For more details, please see this Issue https://github.com/JsBergbau/MiTemperature2/issues/18#issuecomment-590986874
 
+There can be done a lot more with that sensor. It stores highest and lowest values at hour level, has an integrated realtime clock and a few things more like changing the values for the comfort icon on the display. Credits go to jaggil who investigated on this and documented it well. You find the results here https://github.com/JsBergbau/MiTemperature2/issues/1 Just search for jaggil. 
+
 ### Troubleshooting
 Sometimes script fails to connect and tries to connect forever.
 Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
