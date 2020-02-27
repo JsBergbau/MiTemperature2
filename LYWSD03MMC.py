@@ -147,7 +147,7 @@ class MyDelegate(btle.DefaultDelegate):
 			measurement.voltage = voltage
 			if args.battery:
 				#measurement.battery = globalBatteryLevel
-				batteryLevel = int(round((voltage - 2.1),2) * 100) #3.1 or above --> 100% 2.1 --> 0 %
+				batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
 				measurement.battery = batteryLevel
 				print("Battery level:",batteryLevel)
 				
