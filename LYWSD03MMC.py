@@ -300,6 +300,16 @@ while True:
 				print(str(args.count) + " measurements collected. Exiting in a moment.")
 				p.disconnect()
 				time.sleep(5)
+				#It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
+				pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+				bluepypid=0
+				try:
+					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+				except IndexError: #Should normally occur because we're disconnected
+					logging.debug("Couldn't find pid of bluepy-helper")
+				if bluepypid is not 0:
+					os.system("kill " + bluepypid)
+					logging.debug("Killed bluepy with pid: " + str(bluepypid))
 				os._exit(0)
 			print("")
 			continue
