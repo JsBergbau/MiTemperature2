@@ -22,12 +22,13 @@ install via
 
 ## Usage
 ```
+./LYWSD03MMC.py
 usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
-                     [--count N] [--round] [--debounce] [--offset OFFSET]
-                     [--TwoPointCalibration] [--calpoint1 CALPOINT1]
-                     [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
-                     [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
-                     [--skipidentical N]
+                     [--count N] [--interface N] [--round] [--debounce]
+                     [--offset OFFSET] [--TwoPointCalibration]
+                     [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
+                     [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
+                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,6 +36,7 @@ optional arguments:
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
   --battery [], -b []   Get estimated battery level
   --count N, -c N       Read/Receive N measurements and then exit script
+  --interface N, -i N   Specifiy the interface number to use, e.g. 1 for hci1
 
 Rounding and debouncing:
   --round, -r           Round temperature to one decimal place
@@ -74,6 +76,8 @@ Note: When using rounding option you could see 0.1 degress more in the script ou
 Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894 . But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
 
 The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
+
+With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1 
   
   
   ## Tipps
