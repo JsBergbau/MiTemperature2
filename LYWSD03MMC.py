@@ -195,7 +195,7 @@ def connect():
 	return p
 
 # Main loop --------
-parser=argparse.ArgumentParser()
+parser=argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
 parser.add_argument("--battery","-b", help="Get estimated battery level", metavar='', type=int, nargs='?', const=1)
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
@@ -310,7 +310,7 @@ while True:
 					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
 				except IndexError: #Should normally occur because we're disconnected
 					logging.debug("Couldn't find pid of bluepy-helper")
-				if bluepypid is not 0:
+				if bluepypid == 0:
 					os.system("kill " + bluepypid)
 					logging.debug("Killed bluepy with pid: " + str(bluepypid))
 				os._exit(0)
