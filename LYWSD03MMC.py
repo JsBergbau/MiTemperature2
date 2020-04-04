@@ -310,7 +310,7 @@ while True:
 					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
 				except IndexError: #Should normally occur because we're disconnected
 					logging.debug("Couldn't find pid of bluepy-helper")
-				if bluepypid == 0:
+				if bluepypid != 0:
 					os.system("kill " + bluepypid)
 					logging.debug("Killed bluepy with pid: " + str(bluepypid))
 				os._exit(0)
