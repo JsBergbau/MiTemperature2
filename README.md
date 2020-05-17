@@ -89,6 +89,9 @@ With the `--interface` option you specify the number of the bluetooth adapter to
   
   ### Minus degrees
 When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. I can confirm this sensor also goes down to -9.9 °C. At colder temperatures it only shows an "L". But the correct data is still sent! So you even could use ist to watch the temperature in your freezer. However batterylife may be significantly reduced at those low temperatures.
+
+### High battery usage
+There is currently no way to detect a too high battery drain except having empty batteries in less than 2 month. If you encouter lots of empty batteries, please reduce distance between LYWSD03MMC sensor and your Bluetooth receiver. With a voltage drop of 0.1 V in 1.5 month everything is perfectly fine. If it is a bit more, don't worry. Can be a button cell of lower quality. For more infos please visit https://github.com/JsBergbau/MiTemperature2/issues/32
   
   ## Sample output
 ```  
