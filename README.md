@@ -1,4 +1,5 @@
-#  Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor
+# Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor
+
 With this script you can read out the value of your LYWSD03MMC sensor, e.g. with Raspberry PI. Note Raspbery Pi 4 has a very limited bluetooth range. PI Zero W gives much longer range.
 
 This sensor doesn't transmit its values in the advertisment data, like the LYWSDCGQ Bluetooth thermometer. This is more privacy friendly since no one can sniff your temperature readings. On the other side this means you have to establish a bluetooth connection with the device to get the data. When you're connected no other connection is accepted, meaning if you hold the connection no other can readout your temperature and humidity.
@@ -6,6 +7,7 @@ This sensor doesn't transmit its values in the advertisment data, like the LYWSD
 Once you're connected the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
 
 ## Prequisites / Requirements
+
 You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
 
 For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/ If doing so: Omit the rpi-update step.
@@ -19,8 +21,8 @@ install via
 
 `pip3 install bluepy`
 
-
 ## Usage
+
 ```
 ./LYWSD03MMC.py
 usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
@@ -69,32 +71,36 @@ Callback related functions:
   --skipidentical N, -skip N
                         N consecutive identical measurements won't be reported
                         to callbackfunction
-  ```
-  
+```
+
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
 
 Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894 . But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
 
 The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
 
-With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1 
-  
-  
-  ## Tipps
-  Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
-  This sensor only sends its measurements only via notifications. There are quite often notifications because the temperature is measured with a precision of 2 decimal places, but only one shown on the display (and this value is truncated, see above). Trying to directly read/poll the characteristics returns always zeroes. 
-  
-  ### Debouncing
-  The temperature values often change between the same values. To get cleaner temperature curves a debouncing function has been implemented. See here https://github.com/JsBergbau/MiTemperature2/issues/2 for more info.
-  
-  ### Minus degrees
+With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1
+
+## Tips
+
+Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
+This sensor only sends its measurements only via notifications. There are quite often notifications because the temperature is measured with a precision of 2 decimal places, but only one shown on the display (and this value is truncated, see above). Trying to directly read/poll the characteristics returns always zeroes.
+
+### Debouncing
+
+The temperature values often change between the same values. To get cleaner temperature curves a debouncing function has been implemented. See here https://github.com/JsBergbau/MiTemperature2/issues/2 for more info.
+
+### Minus degrees
+
 When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. I can confirm this sensor also goes down to -9.9 °C. At colder temperatures it only shows an "L". But the correct data is still sent! So you even could use ist to watch the temperature in your freezer. However batterylife may be significantly reduced at those low temperatures.
 
 ### High battery usage
+
 There is currently no way to detect a too high battery drain except having empty batteries in less than 2 month. If you encouter lots of empty batteries, please reduce distance between LYWSD03MMC sensor and your Bluetooth receiver. With a voltage drop of 0.1 V in 1.5 month everything is perfectly fine. If it is a bit more, don't worry. Can be a button cell of lower quality. For more infos please visit https://github.com/JsBergbau/MiTemperature2/issues/32
-  
-  ## Sample output
-```  
+
+## Sample output
+
+```
  ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -r -b
 Trying to connect to AA:BB:CC:DD:EE:FF
 Temperature: 20.6
@@ -144,7 +150,9 @@ Battery level: 84
 ```
 
 ### More info
+
 If you like gatttool you can use it, too. However it didn't notice when BT connection was lost, while this Python-Script automatically reestablishes the connection.
+
 ```
 gatttool -I
 connect AA:BB:CC:DD:EE:FF
@@ -166,37 +174,42 @@ d6 and 0b are the battery voltage in Millivolts in little endian format.
 
 Lower power mode: To safe power the connection interval is reduced. For more details, please see this Issue https://github.com/JsBergbau/MiTemperature2/issues/18#issuecomment-590986874
 
-There can be done a lot more with that sensor. It stores highest and lowest values at hour level, has an integrated realtime clock and a few things more like changing the values for the comfort icon on the display. Credits go to jaggil who investigated on this and documented it well. You find the results here https://github.com/JsBergbau/MiTemperature2/issues/1 Just search for jaggil. 
+There can be done a lot more with that sensor. It stores highest and lowest values at hour level, has an integrated realtime clock and a few things more like changing the values for the comfort icon on the display. Credits go to jaggil who investigated on this and documented it well. You find the results here https://github.com/JsBergbau/MiTemperature2/issues/1 Just search for jaggil.
 
 ### Troubleshooting
+
 Sometimes script fails to connect and tries to connect forever.
 Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
 
 Since version 1.1 there is a watchdog-Thread checking when connection is lost for at least 60 seconds and then killing the corresponding bluepy-helper, so that other connections aren't affected. This is a workaround for an obvious bug in bluepy. This bug only occured so far when trying to (re)connect. Then this call to bluepy blocks sometimes forever.
 
 If that doesn't help, a problem with the bluetooth stack could be the cause. To resolve:
+
 ```
 sudo hciconfig hci0 down
 sudo hciconfig hci0 up
 ```
 
-
 ## Calibration
-Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive. 
+
+Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive.
 Wait about 24 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year.
 
 ### Offset calibration
+
 E.g. mine shows 79 % RH when actually there is 75 %. Excecute the script with `-o -4` to substract 4 from the readout value.
 
 ### Two point calibration
+
 The offset is not linear over the whole humidity values. So you should calibrate at another point. MagnesiumChloride is recommended giving about 33% RH at 20 °C. Also Calciumchloride is suitable, but the humidity depends more on temperature. Be sure to have 20 °C. https://www.salzwiki.de/index.php/Deliqueszenzfeuchte
- 
+
 My Xiaomi Bluetooth thermometer shows 39% RH at 33% RH. So wie here have an offset of 6.
 Another hygrometer show 69 % at 75% RH and 33% RH at 33% RH. So offset +6 at 75% TH and offset 0 at 33% RH.
 Example for the Xiaomi to use 2 point calibration:
 At 75% RH you have to substract 4 from the readout value, at 33% RH you have to substract 6.
 
 `-2p -p2 75 -o2 -4 -p1 33 -o1 -6`
+
 ```
 -2p: Enables 2 point calibration
 -p2 75: Point 2 at 75% RH
@@ -208,6 +221,7 @@ At 75% RH you have to substract 4 from the readout value, at 33% RH you have to 
 Note the values in between are interpolated linear and the result is rounded to the nearest whole number. It makes no sense to give floatingpoint number when the input is none.
 
 Output example:
+
 ```
 ./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6
 Trying to connect to AA:BB:CC:DD:EE:FF
@@ -229,22 +243,29 @@ Calibrated humidity: 49
 ```
 
 ## Callback for processing the data
-Via the --call option a script can be passed to sent the data to. 
+
+Via the --call option a script can be passed to sent the data to.
 Example
 `./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --callback sendData.sh`
 If you don't give the sensor a name, the MAC-Address is used. The callback script must be within the same folder as this script.
 The values outputted depends on the options like calibration or battery. So the format is printed in the first argument.
 Example callback
+
 ```
 #!/bin/bash
 echo $@ >> data.txt
 ```
+
 Gives in data.txt `sensorname,temperature,humidity,voltage,humidityCalibrated,timestamp MySensor 20.61 54 2.944 49 1582120122`
 
-Whereas the timestamp is in the Unix timestamp format in UTC (seconds since 1.1.1970 00:00). 
+Whereas the timestamp is in the Unix timestamp format in UTC (seconds since 1.1.1970 00:00).
 
 There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values are read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
 
-All data received from the sensor is stored in a list and transmitted sequentially. This means if your backend like influxdb is not reachable when a new measurement is received, it will be tried again later (currently waiting 5 seconds before the next try). Thus no data is lost when your storage engine has some trouble. There is no upper limit (the only limit should be the RAM). Keep this in mind when specifing a wrong backend. 
+All data received from the sensor is stored in a list and transmitted sequentially. This means if your backend like influxdb is not reachable when a new measurement is received, it will be tried again later (currently waiting 5 seconds before the next try). Thus no data is lost when your storage engine has some trouble. There is no upper limit (the only limit should be the RAM). Keep this in mind when specifing a wrong backend.
 
 "sendToInflux.sh" is an example script for sending the data to influxdb via http-API. Precision was set to the level of seconds. This gives better compression ratios in influxdb.
+
+## Send metrics to Prometheus
+
+[Read instruction about integartion with Prometheus Push Gateway](./prometheus.md)
