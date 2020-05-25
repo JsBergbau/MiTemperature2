@@ -268,4 +268,4 @@ All data received from the sensor is stored in a list and transmitted sequential
 
 ## Send metrics to Prometheus
 
-[Read instruction about integartion with Prometheus Push Gateway](./prometheus.md)
+[Read instruction about integartion with Prometheus Push Gateway](./prometheus/README.md)
