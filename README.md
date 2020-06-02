@@ -31,6 +31,7 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
                      [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
                      [--callback CALLBACK] [--name NAME] [--skipidentical N]
+                     [--influxdb N]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -71,6 +72,10 @@ Callback related functions:
   --skipidentical N, -skip N
                         N consecutive identical measurements won't be reported
                         to callbackfunction
+  --influxdb N, -infl N
+                        Optimize for writing data to influxdb,1 timestamp
+                        optimization, 2 integer optimization
+
 ```
 
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
@@ -80,6 +85,8 @@ Reading the battery level with the standard Bluetooth Low Energy characteristics
 The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
 
 With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1
+
+With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte.
 
 ## Tips
 
