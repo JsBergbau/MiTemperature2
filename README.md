@@ -26,12 +26,12 @@ install via
 ```
 ./LYWSD03MMC.py
 usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
-                     [--count N] [--interface N] [--round] [--debounce]
-                     [--offset OFFSET] [--TwoPointCalibration]
-                     [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
-                     [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
-                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
-                     [--influxdb N]
+                     [--count N] [--interface N] [--unreachable-count N]
+                     [--round] [--debounce] [--offset OFFSET]
+                     [--TwoPointCalibration] [--calpoint1 CALPOINT1]
+                     [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
+                     [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
+                     [--skipidentical N] [--influxdb N]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -40,6 +40,8 @@ optional arguments:
   --battery [], -b []   Get estimated battery level
   --count N, -c N       Read/Receive N measurements and then exit script
   --interface N, -i N   Specifiy the interface number to use, e.g. 1 for hci1
+  --unreachable-count N, -urc N
+                        Exit after N unsuccessful connection tries
 
 Rounding and debouncing:
   --round, -r           Round temperature to one decimal place
@@ -78,7 +80,7 @@ Callback related functions:
 
 ```
 
-Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just trancates the second decimal place.
+Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
 
 Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894 . But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
 
@@ -86,7 +88,11 @@ The `--count` option is intended to save even more power. So far it is not prove
 
 With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1
 
-With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte.
+With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte. Of course there are now more measurements stored in influxdb, but still overall size in influxdb is still lower. Depends also environment, of course. With a very steady environment and very seldom writing identical valus then size in influxdb would be smaller not writing every 10 seconds, of course.
+
+`--unreachable-count N, -urc N` Use this option when you want to exit your script after collection the measurement but your sensor is somehow not reachable. Then after the specified number of failed connection tries the script will exit.
+
+
 
 ## Tips
 
