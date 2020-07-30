@@ -202,6 +202,7 @@ parser.add_argument("--device","-d", help="Set the device MAC-Address in format 
 parser.add_argument("--battery","-b", help="Get estimated battery level", metavar='', type=int, nargs='?', const=1)
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
+parser.add_argument("--unreachable-count","-urc", help="Exit after N unsuccessful connection tries", metavar='N', type=int, default=0)
 
 
 rounding = parser.add_argument_group("Rounding and debouncing")
@@ -260,6 +261,7 @@ logging.debug("Debug: Starting script...")
 pid=os.getpid()	
 bluepypid=None
 unconnectedTime=None
+connectionLostCounter=0
 
 watchdogThread = threading.Thread(target=watchDog_Thread)
 watchdogThread.start()
@@ -321,9 +323,13 @@ while True:
 			continue
 	except Exception as e:
 		print("Connection lost")
+		connectionLostCounter +=1
 		if connected is True: #First connection abort after connected
 			unconnectedTime=int(time.time())
 			connected=False
+		if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
+			print("Maximum numbers of unsuccessful connections reaches, exiting")
+			os._exit(0)
 		time.sleep(1)
 		logging.debug(e)
 		logging.debug(traceback.format_exc())		
