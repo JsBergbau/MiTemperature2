@@ -22,7 +22,7 @@ class Measurement:
 	voltage: float
 	calibratedHumidity: int = 0
 	battery: int = 0
-	timestamp: int = 0	
+	timestamp: int = 0
 
 	def __eq__(self, other):
 		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage:
@@ -36,8 +36,8 @@ previousMeasurement=Measurement(0,0,0,0,0,0)
 identicalCounter=0
 
 def signal_handler(sig, frame):
-        os._exit(0)
-		
+	os._exit(0)
+
 def watchDog_Thread():
 	global unconnectedTime
 	global connected
@@ -59,7 +59,7 @@ def watchDog_Thread():
 			logging.debug("Killed bluepy with pid: " + str(bluepypid))
 			unconnectedTime = now #reset unconnectedTime to prevent multiple killings in a row
 		time.sleep(5)
-	
+
 
 def thread_SendingData():
 	global previousMeasurement
@@ -87,11 +87,12 @@ def thread_SendingData():
 			print(cmd)
 			ret = os.system(cmd)
 			if (ret != 0):
-					measurements.appendleft(mea) #put the measurement back
-					print ("Data couln't be send to Callback, retrying...")
-					time.sleep(5) #wait before trying again
+				measurements.appendleft(mea) #put the measurement back
+				print ("Data couln't be send to Callback, retrying...")
+				time.sleep(5) #wait before trying again
 			else: #data was sent
 				previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
+				time.sleep(60) #wait before trying again
 
 		except IndexError:
 			#print("Keine Daten")
@@ -104,8 +105,8 @@ mode="round"
 class MyDelegate(btle.DefaultDelegate):
 	def __init__(self, params):
 		btle.DefaultDelegate.__init__(self)
-		# ... initialise here
-	
+	# ... initialise here
+
 	def handleNotification(self, cHandle, data):
 		global measurements
 		try:
@@ -117,7 +118,7 @@ class MyDelegate(btle.DefaultDelegate):
 			#print("Temp received: " + str(temp))
 			if args.round:
 				#print("Temperatur unrounded: " + str(temp
-				
+
 				if args.debounce:
 					global mode
 					temp*=10
@@ -136,14 +137,14 @@ class MyDelegate(btle.DefaultDelegate):
 					else:
 						temp=round(temp,0)
 					temp /=10.
-					#print("Debounced temp: " + str(temp))
+				#print("Debounced temp: " + str(temp))
 				else:
 					temp=round(temp,1)
 			humidity=int.from_bytes(data[2:3],byteorder='little')
-			print("Temperature: " + str(temp))
-			print("Humidity: " + str(humidity))
+			# print("Temperature: " + str(temp))
+			# print("Humidity: " + str(humidity))
 			voltage=int.from_bytes(data[3:5],byteorder='little') / 1000.
-			print("Battery voltage:",voltage)
+			# print("Battery voltage:",voltage)
 			measurement.temperature = temp
 			measurement.humidity = humidity
 			measurement.voltage = voltage
@@ -151,8 +152,8 @@ class MyDelegate(btle.DefaultDelegate):
 				#measurement.battery = globalBatteryLevel
 				batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
 				measurement.battery = batteryLevel
-				print("Battery level:",batteryLevel)
-				
+			# print("Battery level:",batteryLevel)
+
 
 			if args.offset:
 				humidityCalibrated = humidity + args.offset
@@ -176,7 +177,7 @@ class MyDelegate(btle.DefaultDelegate):
 					humidityCalibrated = 0
 				humidityCalibrated=int(round(humidityCalibrated,0))
 				print("Calibrated humidity: " + str(humidityCalibrated))
-				measurement.calibratedHumidity = humidityCalibrated	
+				measurement.calibratedHumidity = humidityCalibrated
 
 			measurements.append(measurement)
 
@@ -184,12 +185,12 @@ class MyDelegate(btle.DefaultDelegate):
 			print("Fehler")
 			print(e)
 			print(traceback.format_exc())
-		
+
 # Initialisation  -------
 
 def connect():
-	#print("Interface: " + str(args.interface))
-	p = btle.Peripheral(adress,iface=args.interface)	
+	print("Interface: " + str(args.interface))
+	p = btle.Peripheral(adress,iface=args.interface)
 	val=b'\x01\x00'
 	p.writeCharacteristic(0x0038,val,True) #enable notifications of Temperature, Humidity and Battery voltage
 	p.writeCharacteristic(0x0046,b'\xf4\x01\x00',True)
@@ -252,13 +253,13 @@ cnt=0
 if args.callback:
 	dataThread = threading.Thread(target=thread_SendingData)
 	dataThread.start()
-	
-signal.signal(signal.SIGINT, signal_handler)	
+
+signal.signal(signal.SIGINT, signal_handler)
 connected=False
 #logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.ERROR)
 logging.debug("Debug: Starting script...")
-pid=os.getpid()	
+pid=os.getpid()
 bluepypid=None
 unconnectedTime=None
 connectionLostCounter=0
@@ -274,35 +275,35 @@ while True:
 			#on every new connection a new bluepy-helper is called
 			#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
 			# if bluepypid is not None:
-				# os.system("kill " + bluepypid)
-				# print("Killed possibly remaining bluepy-helper")
+			# os.system("kill " + bluepypid)
+			# print("Killed possibly remaining bluepy-helper")
 			# else:
-				# print("bluepy-helper couldn't be determined, killing not allowed")
-					
-			print("Trying to connect to " + adress)
+			# print("bluepy-helper couldn't be determined, killing not allowed")
+
+			print(" Trying to connect to " + adress)
 			p=connect()
 			# logging.debug("Own PID: "  + str(pid))
 			# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
 			# logging.debug("PSTree: " + pstree)
 			# try:
-				# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+			# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
 			# except IndexError: #Should not happen since we're now connected
-				# logging.debug("Couldn't find pid of bluepy-helper")				
+			# logging.debug("Couldn't find pid of bluepy-helper")
 			connected=True
 			unconnectedTime=None
-			
+
 		# if args.battery:
-				# if(cnt % args.battery == 0):
-					# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
-					# batt=p.readCharacteristic(0x001b)
-					# batt=int.from_bytes(batt,byteorder="little")
-					# print("Battery-Level: " + str(batt))
-					# globalBatteryLevel = batt
-			
-			
-		if p.waitForNotifications(2000):
+		# if(cnt % args.battery == 0):
+		# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
+		# batt=p.readCharacteristic(0x001b)
+		# batt=int.from_bytes(batt,byteorder="little")
+		# print("Battery-Level: " + str(batt))
+		# globalBatteryLevel = batt
+
+
+		if p.waitForNotifications(60000):
 			# handleNotification() was called
-			
+
 			cnt += 1
 			if args.count is not None and cnt >= args.count:
 				print(str(args.count) + " measurements collected. Exiting in a moment.")
@@ -322,7 +323,7 @@ while True:
 			print("")
 			continue
 	except Exception as e:
-		print("Connection lost")
+		print("Connection lost: " + str(e))
 		connectionLostCounter +=1
 		if connected is True: #First connection abort after connected
 			unconnectedTime=int(time.time())
@@ -332,7 +333,7 @@ while True:
 			os._exit(0)
 		time.sleep(1)
 		logging.debug(e)
-		logging.debug(traceback.format_exc())		
-		
+		logging.debug(traceback.format_exc())
+
 	print ("Waiting...")
-	# Perhaps do something else here
+# Perhaps do something else here
