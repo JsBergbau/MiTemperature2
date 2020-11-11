@@ -105,7 +105,8 @@ The temperature values often change between the same values. To get cleaner temp
 
 ### Minus degrees
 
-When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. I can confirm this sensor also goes down to -9.9 °C. At colder temperatures it only shows an "L". But the correct data is still sent! So you even could use ist to watch the temperature in your freezer. However batterylife may be significantly reduced at those low temperatures.
+When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. 
+I can confirm the LYWSD03MMC also goes down to -9.9 °C. At colder temperatures it only shows an "L". But even at lower temperatures the correct temperature is still sent! So you even could use ist to watch the temperature in your freezer which is a lot below -9.9 °C. However batterylife may be significantly reduced at those low temperatures.
 
 ### High battery usage
 
