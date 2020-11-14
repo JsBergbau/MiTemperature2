@@ -22,17 +22,18 @@ class Measurement:
 	voltage: float
 	calibratedHumidity: int = 0
 	battery: int = 0
-	timestamp: int = 0	
+	timestamp: int = 0
+	sensorname: str	= ""
 
 	def __eq__(self, other):
-		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage:
+		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage and self.sensorname == other.sensorname:
 			return  True
 		else:
 			return False
 
 measurements=deque()
 #globalBatteryLevel=0
-previousMeasurement=Measurement(0,0,0,0,0,0)
+previousMeasurement=Measurement(0,0,0,0,0,0,0)
 identicalCounter=0
 
 def signal_handler(sig, frame):
@@ -74,7 +75,11 @@ def thread_SendingData():
 				continue
 			identicalCounter=0
 			fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
-			params = args.name + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
+			if ' ' in mea.sensorname:
+				sensorname = '"' + mea.sensorname + '"'
+			else:
+				sensorname = mea.sensorname
+			params = sensorname + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
 			if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
 				fmt +=",humidityCalibrated"
 				params += " " + str(mea.calibratedHumidity)
@@ -100,6 +105,42 @@ def thread_SendingData():
 			print(e)
 			print(traceback.format_exc())
 
+sock = None #from ATC 
+lastBLEPaketReceived = 0
+BLERestartCounter = 1
+def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if you have a lot of BLE connections, this thread periodically enables BLE scanning again
+	global BLERestartCounter
+	while True:
+		time.sleep(1)
+		now = time.time()
+		if now - lastBLEPaketReceived > args.watchdogtimer:
+			print("Watchdog: Did not receive any BLE Paket within", int(now - lastBLEPaketReceived), "s. Restarting BLE scan. Count:", BLERestartCounter)
+			disable_le_scan(sock)
+			enable_le_scan(sock, filter_duplicates=False)
+			BLERestartCounter += 1
+
+
+def calibrateHumidity2Points(humidity, offset1, offset2, calpoint1, calpoint2):
+	#offset1=args.offset1
+	#offset2=args.offset2
+	#p1y=args.calpoint1
+	#p2y=args.calpoint2
+	p1y=calpoint1
+	p2y=calpoint2
+	p1x=p1y - offset1
+	p2x=p2y - offset2
+	m = (p1y - p2y) * 1.0 / (p1x - p2x) # y=mx+b
+	#b = (p1x * p2y - p2x * p1y) * 1.0 / (p1y - p2y)
+	b = p2y - m * p2x #would be more efficient to do this calculations only once
+	humidityCalibrated=m*humidity + b
+	if (humidityCalibrated > 100 ): #with correct calibration this should not happen
+		humidityCalibrated = 100
+	elif (humidityCalibrated < 0):
+		humidityCalibrated = 0
+	humidityCalibrated=int(round(humidityCalibrated,0))
+	return humidityCalibrated
+
+
 mode="round"
 class MyDelegate(btle.DefaultDelegate):
 	def __init__(self, params):
@@ -109,10 +150,11 @@ class MyDelegate(btle.DefaultDelegate):
 	def handleNotification(self, cHandle, data):
 		global measurements
 		try:
-			measurement = Measurement(0,0,0,0,0,0)
-			measurement.timestamp = int(time.time())
+			measurement = Measurement(0,0,0,0,0,0,0)
 			if args.influxdb == 1:
 				measurement.timestamp = int((time.time() // 10) * 10)
+			else:
+				measurement.timestamp = int(time.time())
 			temp=int.from_bytes(data[0:2],byteorder='little',signed=True)/100
 			#print("Temp received: " + str(temp))
 			if args.round:
@@ -143,7 +185,7 @@ class MyDelegate(btle.DefaultDelegate):
 			print("Temperature: " + str(temp))
 			print("Humidity: " + str(humidity))
 			voltage=int.from_bytes(data[3:5],byteorder='little') / 1000.
-			print("Battery voltage:",voltage)
+			print("Battery voltage:",voltage,"V")
 			measurement.temperature = temp
 			measurement.humidity = humidity
 			measurement.voltage = voltage
@@ -160,21 +202,7 @@ class MyDelegate(btle.DefaultDelegate):
 				measurement.calibratedHumidity = humidityCalibrated
 
 			if args.TwoPointCalibration:
-				offset1=args.offset1
-				offset2=args.offset2
-				p1y=args.calpoint1
-				p2y=args.calpoint2
-				p1x=p1y - offset1
-				p2x=p2y - offset2
-				m = (p1y - p2y) * 1.0 / (p1x - p2x) # y=mx+b
-				#b = (p1x * p2y - p2x * p1y) * 1.0 / (p1y - p2y)
-				b = p2y - m * p2x #would be more efficient to do this calculations only once
-				humidityCalibrated=m*humidity + b
-				if (humidityCalibrated > 100 ): #with correct calibration this should not happen
-					humidityCalibrated = 100
-				elif (humidityCalibrated < 0):
-					humidityCalibrated = 0
-				humidityCalibrated=int(round(humidityCalibrated,0))
+				humidityCalibrated= calibrateHumidity2Points(humidity,args.offset1,args.offset2, args.calpoint1, args.calpoint2)
 				print("Calibrated humidity: " + str(humidityCalibrated))
 				measurement.calibratedHumidity = humidityCalibrated	
 
@@ -219,11 +247,17 @@ complexCalibrationGroup.add_argument("--offset1","-o1", help="Enter the offset f
 complexCalibrationGroup.add_argument("--calpoint2","-p2", help="Enter the second calibration point",type=int)
 complexCalibrationGroup.add_argument("--offset2","-o2", help="Enter the offset for the second calibration point",type=int)
 
-callbackgroup = parser.add_argument_group("Callback related functions")
+callbackgroup = parser.add_argument_group("Callback related arguments")
 callbackgroup.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
 callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported to the callback script")
 callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
+
+atcgroup = parser.add_argument_group("ATC mode related arguments")
+atcgroup.add_argument("--atc","-a", help="Read the data of devices with custom ATC firmware flashed",action='store_true')
+atcgroup.add_argument("--watchdogtimer","-wdt",metavar='X', type=int, help="Re-enable scanning after not receiving any BLE packet after X seconds")
+atcgroup.add_argument("--devicelistfile","-df",help="Specify a device list file giving further details to devices")
+atcgroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')
 
 args=parser.parse_args()
 if args.device:
@@ -232,7 +266,7 @@ if args.device:
 	else:
 		print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
 		os._exit(1)
-else:
+elif not args.atc:
 	parser.print_help()
 	os._exit(1)
 
@@ -246,93 +280,219 @@ if args.TwoPointCalibration:
 if not args.name:
 	args.name = args.device
 
-p=btle.Peripheral()
-cnt=0
-
 if args.callback:
 	dataThread = threading.Thread(target=thread_SendingData)
 	dataThread.start()
-	
+
 signal.signal(signal.SIGINT, signal_handler)	
-connected=False
-#logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.ERROR)
-logging.debug("Debug: Starting script...")
-pid=os.getpid()	
-bluepypid=None
-unconnectedTime=None
-connectionLostCounter=0
 
-watchdogThread = threading.Thread(target=watchDog_Thread)
-watchdogThread.start()
-logging.debug("watchdogThread startet")
+if args.device: 
 
-while True:
-	try:
-		if not connected:
-			#Bluepy sometimes hangs and makes it even impossible to connect with gatttool as long it is running
-			#on every new connection a new bluepy-helper is called
-			#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
-			# if bluepypid is not None:
-				# os.system("kill " + bluepypid)
-				# print("Killed possibly remaining bluepy-helper")
-			# else:
-				# print("bluepy-helper couldn't be determined, killing not allowed")
-					
-			print("Trying to connect to " + adress)
-			p=connect()
-			# logging.debug("Own PID: "  + str(pid))
-			# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
-			# logging.debug("PSTree: " + pstree)
-			# try:
-				# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
-			# except IndexError: #Should not happen since we're now connected
-				# logging.debug("Couldn't find pid of bluepy-helper")				
-			connected=True
-			unconnectedTime=None
-			
-		# if args.battery:
-				# if(cnt % args.battery == 0):
-					# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
-					# batt=p.readCharacteristic(0x001b)
-					# batt=int.from_bytes(batt,byteorder="little")
-					# print("Battery-Level: " + str(batt))
-					# globalBatteryLevel = batt
-			
-			
-		if p.waitForNotifications(2000):
-			# handleNotification() was called
-			
-			cnt += 1
-			if args.count is not None and cnt >= args.count:
-				print(str(args.count) + " measurements collected. Exiting in a moment.")
-				p.disconnect()
-				time.sleep(5)
-				#It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
-				pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
-				bluepypid=0
-				try:
-					bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
-				except IndexError: #Should normally occur because we're disconnected
-					logging.debug("Couldn't find pid of bluepy-helper")
-				if bluepypid != 0:
-					os.system("kill " + bluepypid)
-					logging.debug("Killed bluepy with pid: " + str(bluepypid))
+	p=btle.Peripheral()
+	cnt=0
+
+
+	connected=False
+	#logging.basicConfig(level=logging.DEBUG)
+	logging.basicConfig(level=logging.ERROR)
+	logging.debug("Debug: Starting script...")
+	pid=os.getpid()	
+	bluepypid=None
+	unconnectedTime=None
+	connectionLostCounter=0
+
+	watchdogThread = threading.Thread(target=watchDog_Thread)
+	watchdogThread.start()
+	logging.debug("watchdogThread started")
+
+	while True:
+		try:
+			if not connected:
+				#Bluepy sometimes hangs and makes it even impossible to connect with gatttool as long it is running
+				#on every new connection a new bluepy-helper is called
+				#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
+				# if bluepypid is not None:
+					# os.system("kill " + bluepypid)
+					# print("Killed possibly remaining bluepy-helper")
+				# else:
+					# print("bluepy-helper couldn't be determined, killing not allowed")
+						
+				print("Trying to connect to " + adress)
+				p=connect()
+				# logging.debug("Own PID: "  + str(pid))
+				# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+				# logging.debug("PSTree: " + pstree)
+				# try:
+					# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+				# except IndexError: #Should not happen since we're now connected
+					# logging.debug("Couldn't find pid of bluepy-helper")				
+				connected=True
+				unconnectedTime=None
+				
+			# if args.battery:
+					# if(cnt % args.battery == 0):
+						# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
+						# batt=p.readCharacteristic(0x001b)
+						# batt=int.from_bytes(batt,byteorder="little")
+						# print("Battery-Level: " + str(batt))
+						# globalBatteryLevel = batt
+				
+				
+			if p.waitForNotifications(2000):
+				# handleNotification() was called
+				
+				cnt += 1
+				if args.count is not None and cnt >= args.count:
+					print(str(args.count) + " measurements collected. Exiting in a moment.")
+					p.disconnect()
+					time.sleep(5)
+					#It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
+					pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+					bluepypid=0
+					try:
+						bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+					except IndexError: #Should normally occur because we're disconnected
+						logging.debug("Couldn't find pid of bluepy-helper")
+					if bluepypid != 0:
+						os.system("kill " + bluepypid)
+						logging.debug("Killed bluepy with pid: " + str(bluepypid))
+					os._exit(0)
+				print("")
+				continue
+		except Exception as e:
+			print("Connection lost")
+			connectionLostCounter +=1
+			if connected is True: #First connection abort after connected
+				unconnectedTime=int(time.time())
+				connected=False
+			if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
+				print("Maximum numbers of unsuccessful connections reaches, exiting")
 				os._exit(0)
-			print("")
-			continue
-	except Exception as e:
-		print("Connection lost")
-		connectionLostCounter +=1
-		if connected is True: #First connection abort after connected
-			unconnectedTime=int(time.time())
-			connected=False
-		if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
-			print("Maximum numbers of unsuccessful connections reaches, exiting")
-			os._exit(0)
-		time.sleep(1)
-		logging.debug(e)
-		logging.debug(traceback.format_exc())		
-		
-	print ("Waiting...")
-	# Perhaps do something else here
+			time.sleep(1)
+			logging.debug(e)
+			logging.debug(traceback.format_exc())		
+			
+		print ("Waiting...")
+		# Perhaps do something else here
+
+elif args.atc:
+	print("Script started in ATC Mode")
+	print("----------------------------")
+	print("In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.")
+	print("Also --name Argument is ignored, if you require names, please use --namefile.")
+	print("In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.")
+	print("ATC mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
+	print("You have to redo this step if you upgrade your python version.")
+	print("----------------------------")
+
+	import sys
+	import bluetooth._bluetooth as bluez
+
+	from bluetooth_utils import (toggle_device,
+								enable_le_scan, parse_le_advertising_events,
+								disable_le_scan, raw_packet_to_str)
+
+	advCounter=dict() 
+	sensors = dict()
+	if args.devicelistfile:
+		import configparser
+		if not os.path.exists(args.devicelistfile):
+			print ("Error specified device list file '",args.devicelistfile,"' not found")
+			os._exit(1)
+		sensors = configparser.ConfigParser()
+		sensors.read(args.devicelistfile)
+
+	if args.onlydevicelist and not args.devicelistfile:
+		print("Error: --onlydevicelist requires --devicelistfile <devicelistfile>")
+		os._exit(1)
+
+	dev_id = args.interface  # the bluetooth device is hci0
+	toggle_device(dev_id, True)
+	
+	try:
+		sock = bluez.hci_open_dev(dev_id)
+	except:
+		print("Cannot open bluetooth device %i" % dev_id)
+		raise
+
+	enable_le_scan(sock, filter_duplicates=False)
+
+	try:
+		prev_data = None
+
+		def le_advertise_packet_handler(mac, adv_type, data, rssi):
+			global lastBLEPaketReceived
+			if args.watchdogtimer:
+				lastBLEPaketReceived = time.time()
+			lastBLEPaketReceived = time.time()
+			#print("reveived BLE packet")
+			data_str = raw_packet_to_str(data)
+			ATCPaketMAC = data_str[10:22].upper()
+			macStr = mac.replace(":","").upper() 
+			atcIdentifier = data_str[6:10].upper()
+			if(atcIdentifier == "1A18" and ATCPaketMAC == macStr) and not args.onlydevicelist or (atcIdentifier == "1A18" and mac in sensors): #only Data from ATC devices, double checked
+				advNumber = data_str[-2:]
+				if macStr in advCounter:
+					lastAdvNumber = advCounter[macStr]
+				else:
+					lastAdvNumber = None
+				if lastAdvNumber == None or lastAdvNumber != advNumber:
+					advCounter[macStr] = advNumber
+					print("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+					#print("AdvNumber: ", advNumber)
+					#temp = data_str[22:26].encode('utf-8')
+					#temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big') / 10.
+					global measurements
+					measurement = Measurement(0,0,0,0,0,0,0)
+					if args.influxdb == 1:
+						measurement.timestamp = int((time.time() // 10) * 10)
+					else:
+						measurement.timestamp = int(time.time())
+
+
+					
+					temperature = int(data_str[22:26],16) / 10.
+					print("Temperature: ", temperature)
+					humidity = int(data_str[26:28], 16)
+					print("Humidity: ", humidity)
+					batteryVoltage = int(data_str[30:34], 16) / 1000
+					print ("Battery voltage:", batteryVoltage,"V")
+
+					if args.battery:
+						batteryPercent = int(data_str[28:30], 16)
+						print ("Battery:", batteryPercent,"%")
+						measurement.battery = batteryPercent
+					measurement.humidity = humidity
+					measurement.temperature = temperature
+					measurement.voltage = batteryVoltage
+
+					if mac in sensors:
+						try:
+							measurement.sensorname = sensors[mac]["sensorname"]
+						except:
+							measurement.sensorname = mac
+						if "offset1" in sensors[mac] and "offset2" in sensors[mac] and "calpoint1" in sensors[mac] and "calpoint2" in sensors[mac]:
+							measurement.humidity = calibrateHumidity2Points(humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
+							print ("Humidity calibrated (2 points calibration): ", measurement.humidity)
+						elif "humidityOffset" in sensors[mac]:
+							measurement.humidity = humidity + int(sensors[mac]["humidityOffset"])
+							print ("Humidity calibrated (offset calibration): ", measurement.humidity)
+					else:
+						measurement.sensorname = mac
+
+					measurements.append(measurement)	
+
+		if  args.watchdogtimer:
+			keepingLEScanRunningThread = threading.Thread(target=keepingLEScanRunning)
+			keepingLEScanRunningThread.start()
+			logging.debug("keepingLEScanRunningThread started")
+
+
+
+		# Blocking call (the given handler will be called each time a new LE
+		# advertisement packet is detected)
+		parse_le_advertising_events(sock,
+									handler=le_advertise_packet_handler,
+									debug=False)
+	except KeyboardInterrupt:
+		disable_le_scan(sock)
