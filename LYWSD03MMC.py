@@ -118,6 +118,7 @@ def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if 
 			disable_le_scan(sock)
 			enable_le_scan(sock, filter_duplicates=False)
 			BLERestartCounter += 1
+			print("")
 
 
 def calibrateHumidity2Points(humidity, offset1, offset2, calpoint1, calpoint2):
@@ -480,7 +481,8 @@ elif args.atc:
 					else:
 						measurement.sensorname = mac
 
-					measurements.append(measurement)	
+					measurements.append(measurement)
+					print("")	
 
 		if  args.watchdogtimer:
 			keepingLEScanRunningThread = threading.Thread(target=keepingLEScanRunning)
