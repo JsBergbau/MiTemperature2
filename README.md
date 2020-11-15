@@ -21,6 +21,20 @@ install via
 
 `pip3 install bluepy`
 
+### Requirements for reading Xiaomi Temperature and Humidity Sensor with ATC firmware
+
+Additional requirements if you want to use the atc version. If you don't use ATC version, please ignore this section.
+```
+apt install bluetooth libbluetooth-dev
+pip3 install pybluez
+```
+
+Bluetooth LE Scanning needs root. To run the script for AT with normal user rights, please execute
+```
+sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)
+```
+After a Python upgrade, you have to redo the above step.
+
 ## Usage
 
 ```
@@ -31,7 +45,9 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--TwoPointCalibration] [--calpoint1 CALPOINT1]
                      [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
                      [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
-                     [--skipidentical N] [--influxdb N]
+                     [--skipidentical N] [--influxdb N] [--atc]
+                     [--watchdogtimer X] [--devicelistfile DEVICELISTFILE]
+                     [--onlydevicelist]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -65,7 +81,7 @@ Offset calibration mode:
   --offset2 OFFSET2, -o2 OFFSET2
                         Enter the offset for the second calibration point
 
-Callback related functions:
+Callback related arguments:
   --callback CALLBACK, -call CALLBACK
                         Pass the path to a program/script that will be called
                         on each new measurement
@@ -78,6 +94,18 @@ Callback related functions:
                         Optimize for writing data to influxdb,1 timestamp
                         optimization, 2 integer optimization
 
+ATC mode related arguments:
+  --atc, -a             Read the data of devices with custom ATC firmware
+                        flashed
+  --watchdogtimer X, -wdt X
+                        Re-enable scanning after not receiving any BLE packet
+                        after X seconds
+  --devicelistfile DEVICELISTFILE, -df DEVICELISTFILE
+                        Specify a device list file giving further details to
+                        devices
+  --onlydevicelist, -odl
+                        Only read devices which are in the device list file
+
 ```
 
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
@@ -88,10 +116,56 @@ The `--count` option is intended to save even more power. So far it is not prove
 
 With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1
 
-With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte. Of course there are now more measurements stored in influxdb, but still overall size in influxdb is still lower. Depends also environment, of course. With a very steady environment and very seldom writing identical valus then size in influxdb would be smaller not writing every 10 seconds, of course.
+With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte. Of course there are now more measurements stored in influxdb, but still overall size in influxdb is still lower. Depends also environment, of course. With a very steady environment and very seldom writing identical valus then size in influxdb would be smaller not writing every 10 seconds, of course. Integer optimizsation `--influxdb 2`is not implemented yet.
 
 `--unreachable-count N, -urc N` Use this option when you want to exit your script after collection the measurement but your sensor is somehow not reachable. Then after the specified number of failed connection tries the script will exit.
 
+### ATC Mode Usage
+
+Thanks to https://github.com/atc1441/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisments. In this mode you don't have to connect to the sensor. This saves a lot of power. 
+
+In this mode the script listens for BLE advertisments and filters for ATC flashed LYWSD03MMC sensors. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
+
+ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available.
+
+`--watchdogtimer X` sometimes your device leaves BLE scanning mode, then you won't receive any data anymore. To avoid this after X seconds without receiving any BLE packet (not only from ATC sensors) BLE scanning mode is re-enabled. If you have configured your ATC LYWSD03MMC to advertise new data every 10 seconds, I recommend a setting of 5 seconds, so `--watchdogtimer 5`. On a Raspberry PI Zero W polling 10 sensors (2 are currently unreachable) this re-enabling BLE scan can happen a few times per minute. When polling 8 reachable sensors it happens less frequent but still at least once or twice a minute. 
+
+One note about new advertising data: The ATC LYWSD03MMC sends out the data about every second. After 10 seconds (or your configured interval) it advertises new data and to detect this, it increases the paket counter. Only the values of first paket of this series with the same paketcounter is displayed and reported by callback, since the data in one series is identical.
+
+`--devicelistfile <filename>` Use this option to give your sensors a name/alias. This file can also be on a network drive. So you can keep it up to date on a single place for multiple receivers. Also in this file is space for calibration data. 
+
+Note: ATC firmware shows other humidity values than the stock Xiaomi firmware, so you have to re-calibrate your sensors. The temperature value is unchanged compared to the Xiaomi sensor firmware.
+
+An example is given in the sensors.ini file in this repository. It is quite self explaining
+
+```
+[default]
+info1=MAC Adresses must be in UPPERCASE otherwise sensor won't be found by the script
+info2=now all available options are listet. If offset1, offset2, calpoint1 and calpoint2 are given 2Point calibration is used instead of humidityOffset.
+info3= Note options are case sensitive
+;info4=Use semicolon to comment out lines
+sensorname=Specify an easy readable name
+humidityOffset=-5
+offset1 = -10
+offset2 = 10
+calpoint1 = 75
+calpoint2 = 33
+
+;[AA:BB:CC:DD:EE:FF]
+; sensorname=Bathroom
+; humidityOffset=-30
+; offset1 = -10
+; offset2 = -10
+; calpoint1 = 75
+; calpoint2 = 33
+
+[BD:AD:CA:1F:4D:12]
+sensorname=Living Room
+humidityOffset=10
+offset1 = -10
+```
+
+`--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
 
 
 ## Tips
@@ -163,6 +237,70 @@ Battery voltage: 2.944
 Battery level: 84
 ```
 
+### Sample output ATC mode
+
+```
+./LYWSD03MMC.py --atc --watchdogtimer 5 -b
+Script started in ATC Mode
+----------------------------
+In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.
+Also --name Argument is ignored, if you require names, please use --namefile.
+In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.
+ATC mode usually requires root rights. If you want to use it with normal user rights,
+please execute "sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)"
+You have to redo this step if you upgrade your python version.
+----------------------------
+Power ON bluetooth device 0
+Bluetooth device 0 is already enabled
+Enable LE scan
+scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
+socket filter set to ptype=HCI_EVENT_PKT event=LE_META_EVENT
+Listening ...
+Watchdog: Did not receive any BLE Paket within 1605398698 s. Restarting BLE scan. Count: 1
+Disable LE scan
+Enable LE scan
+scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
+BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0384d0b58b1 -79
+Temperature:  19.2
+Humidity:  56
+Battery voltage: 2.904 V
+Battery: 77 %
+
+BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d3344d0b56cd -51
+Temperature:  21.1
+Humidity:  52
+Battery voltage: 2.902 V
+Battery: 77 %
+
+BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0384d0b58b2 -78
+Temperature:  19.2
+Humidity:  56
+Battery voltage: 2.904 V
+Battery: 77 %
+
+BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d4344d0b56ce -50
+Temperature:  21.2
+Humidity:  52
+Battery voltage: 2.902 V
+Battery: 77 %
+
+Watchdog: Did not receive any BLE Paket within 5 s. Restarting BLE scan. Count: 2
+Disable LE scan
+Enable LE scan
+scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
+BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0394d0b58b3 -77
+Temperature:  19.2
+Humidity:  57
+Battery voltage: 2.904 V
+Battery: 77 %
+
+BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d4344d0b56cf -49
+Temperature:  21.2
+Humidity:  52
+Battery voltage: 2.902 V
+Battery: 77 %
+```
+
 ### More info
 
 If you like gatttool you can use it, too. However it didn't notice when BT connection was lost, while this Python-Script automatically reestablishes the connection.
@@ -205,6 +343,8 @@ sudo hciconfig hci0 up
 ```
 
 ## Calibration
+
+Note: If you have calibrated your sensors and flash ATC firmware, you have to calibrate them again.
 
 Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive.
 Wait about 24 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year.
