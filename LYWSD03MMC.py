@@ -190,6 +190,7 @@ class MyDelegate(btle.DefaultDelegate):
 			measurement.temperature = temp
 			measurement.humidity = humidity
 			measurement.voltage = voltage
+			measurement.sensorname = args.name
 			if args.battery:
 				#measurement.battery = globalBatteryLevel
 				batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
