@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -u
 #!/home/openhabian/Python3/Python-3.7.4/python -u
-#-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
+#-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are logging.debuged very lately or would even mixup
 
 from bluepy import btle
 import argparse
@@ -70,7 +70,7 @@ def thread_SendingData():
 		try:
 			mea = measurements.popleft()
 			if (mea == previousMeasurement and identicalCounter < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 pakets per minute, 50 pakets --> writing at least every 5 minutes
-				print("Measurements are identical don't send data\n")
+				logging.debug("Measurements are identical don't send data\n")
 				identicalCounter+=1
 				continue
 			identicalCounter=0
@@ -89,21 +89,21 @@ def thread_SendingData():
 			params += " " + str(mea.timestamp)
 			fmt +=",timestamp"
 			cmd = path + "/" + args.callback + " " + fmt + " " + params
-			print(cmd)
+			logging.debug(cmd)
 			ret = os.system(cmd)
 			if (ret != 0):
 					measurements.appendleft(mea) #put the measurement back
-					print ("Data couln't be send to Callback, retrying...")
+					logging.debug ("Data couln't be send to Callback, retrying...")
 					time.sleep(5) #wait before trying again
 			else: #data was sent
 				previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
 
 		except IndexError:
-			#print("Keine Daten")
+			#logging.debug("Keine Daten")
 			time.sleep(1)
 		except Exception as e:
-			print(e)
-			print(traceback.format_exc())
+			logging.debug(e)
+			logging.debug(traceback.format_exc())
 
 sock = None #from ATC 
 lastBLEPaketReceived = 0
@@ -114,11 +114,11 @@ def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if 
 		time.sleep(1)
 		now = time.time()
 		if now - lastBLEPaketReceived > args.watchdogtimer:
-			print("Watchdog: Did not receive any BLE Paket within", int(now - lastBLEPaketReceived), "s. Restarting BLE scan. Count:", BLERestartCounter)
+			logging.debug("Watchdog: Did not receive any BLE Paket within " + str(int(now - lastBLEPaketReceived)) + "s. Restarting BLE scan. Count:", BLERestartCounter)
 			disable_le_scan(sock)
 			enable_le_scan(sock, filter_duplicates=False)
 			BLERestartCounter += 1
-			print("")
+			#logging.debug("")
 
 
 def calibrateHumidity2Points(humidity, offset1, offset2, calpoint1, calpoint2):
@@ -157,21 +157,21 @@ class MyDelegate(btle.DefaultDelegate):
 			else:
 				measurement.timestamp = int(time.time())
 			temp=int.from_bytes(data[0:2],byteorder='little',signed=True)/100
-			#print("Temp received: " + str(temp))
+			#logging.debug("Temp received: " + str(temp))
 			if args.round:
-				#print("Temperatur unrounded: " + str(temp
+				#logging.debug("Temperatur unrounded: " + str(temp
 				
 				if args.debounce:
 					global mode
 					temp*=10
 					intpart = math.floor(temp)
 					fracpart = round(temp - intpart,1)
-					#print("Fracpart: " + str(fracpart))
+					#logging.debug("Fracpart: " + str(fracpart))
 					if fracpart >= 0.7:
 						mode="ceil"
 					elif fracpart <= 0.2: #either 0.8 and 0.3 or 0.7 and 0.2 for best even distribution
 						mode="trunc"
-					#print("Modus: " + mode)
+					#logging.debug("Modus: " + mode)
 					if mode=="trunc": #only a few times
 						temp=math.trunc(temp)
 					elif mode=="ceil":
@@ -179,14 +179,14 @@ class MyDelegate(btle.DefaultDelegate):
 					else:
 						temp=round(temp,0)
 					temp /=10.
-					#print("Debounced temp: " + str(temp))
+					#logging.debug("Debounced temp: " + str(temp))
 				else:
 					temp=round(temp,1)
 			humidity=int.from_bytes(data[2:3],byteorder='little')
-			print("Temperature: " + str(temp))
-			print("Humidity: " + str(humidity))
+			logging.debug("Temperature: " + str(temp))
+			logging.debug("Humidity: " + str(humidity))
 			voltage=int.from_bytes(data[3:5],byteorder='little') / 1000.
-			print("Battery voltage:",voltage,"V")
+			logging.debug("Battery voltage: " + str(voltage) + "V")
 			measurement.temperature = temp
 			measurement.humidity = humidity
 			measurement.voltage = voltage
@@ -195,30 +195,30 @@ class MyDelegate(btle.DefaultDelegate):
 				#measurement.battery = globalBatteryLevel
 				batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
 				measurement.battery = batteryLevel
-				print("Battery level:",batteryLevel)
+				logging.debug("Battery level: " + str(batteryLevel))
 				
 
 			if args.offset:
 				humidityCalibrated = humidity + args.offset
-				print("Calibrated humidity: " + str(humidityCalibrated))
+				logging.debug("Calibrated humidity: " + str(humidityCalibrated))
 				measurement.calibratedHumidity = humidityCalibrated
 
 			if args.TwoPointCalibration:
 				humidityCalibrated= calibrateHumidity2Points(humidity,args.offset1,args.offset2, args.calpoint1, args.calpoint2)
-				print("Calibrated humidity: " + str(humidityCalibrated))
+				logging.debug("Calibrated humidity: " + str(humidityCalibrated))
 				measurement.calibratedHumidity = humidityCalibrated	
 
 			measurements.append(measurement)
 
 		except Exception as e:
-			print("Fehler")
-			print(e)
-			print(traceback.format_exc())
+			logging.debug("Fehler")
+			logging.debug(e)
+			logging.debug(traceback.format_exc())
 		
 # Initialisation  -------
 
 def connect():
-	#print("Interface: " + str(args.interface))
+	#logging.debug("Interface: " + str(args.interface))
 	p = btle.Peripheral(adress,iface=args.interface)	
 	val=b'\x01\x00'
 	p.writeCharacteristic(0x0038,val,True) #enable notifications of Temperature, Humidity and Battery voltage
@@ -233,6 +233,7 @@ parser.add_argument("--battery","-b", help="Get estimated battery level", metava
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
 parser.add_argument("--unreachable-count","-urc", help="Exit after N unsuccessful connection tries", metavar='N', type=int, default=0)
+parser.add_argument("--quiet","-q", help="reduce logging output to errors only",action='store_true')
 
 
 rounding = parser.add_argument_group("Rounding and debouncing")
@@ -262,22 +263,28 @@ atcgroup.add_argument("--devicelistfile","-df",help="Specify a device list file 
 atcgroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')
 
 args=parser.parse_args()
+
+if args.quiet:
+    logging.basicConfig(level=logging.ERROR)
+else:
+    logging.basicConfig(level=logging.DEBUG)
+
 if args.device:
 	if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
 		adress=args.device
 	else:
-		print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
+		logging.debug("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
 		os._exit(1)
 elif not args.atc:
-	parser.print_help()
+	parser.logging.debug_help()
 	os._exit(1)
 
 if args.TwoPointCalibration:
 	if(not(args.calpoint1 and args.offset1 and args.calpoint2 and args.offset2)):
-		print("In 2 Point calibration you have to enter 4 points")
+		logging.debug("In 2 Point calibration you have to enter 4 points")
 		os._exit(1)
 	elif(args.offset):
-		print("Offset calibration and 2 Point calibration can't be used together")
+		logging.debug("Offset calibration and 2 Point calibration can't be used together")
 		os._exit(1)
 if not args.name:
 	args.name = args.device
@@ -295,8 +302,6 @@ if args.device:
 
 
 	connected=False
-	#logging.basicConfig(level=logging.DEBUG)
-	logging.basicConfig(level=logging.ERROR)
 	logging.debug("Debug: Starting script...")
 	pid=os.getpid()	
 	bluepypid=None
@@ -315,11 +320,11 @@ if args.device:
 				#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
 				# if bluepypid is not None:
 					# os.system("kill " + bluepypid)
-					# print("Killed possibly remaining bluepy-helper")
+					# logging.debug("Killed possibly remaining bluepy-helper")
 				# else:
-					# print("bluepy-helper couldn't be determined, killing not allowed")
+					# logging.debug("bluepy-helper couldn't be determined, killing not allowed")
 						
-				print("Trying to connect to " + adress)
+				logging.debug("Trying to connect to " + adress)
 				p=connect()
 				# logging.debug("Own PID: "  + str(pid))
 				# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
@@ -333,10 +338,10 @@ if args.device:
 				
 			# if args.battery:
 					# if(cnt % args.battery == 0):
-						# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
+						# logging.debug("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
 						# batt=p.readCharacteristic(0x001b)
 						# batt=int.from_bytes(batt,byteorder="little")
-						# print("Battery-Level: " + str(batt))
+						# logging.debug("Battery-Level: " + str(batt))
 						# globalBatteryLevel = batt
 				
 				
@@ -345,7 +350,7 @@ if args.device:
 				
 				cnt += 1
 				if args.count is not None and cnt >= args.count:
-					print(str(args.count) + " measurements collected. Exiting in a moment.")
+					logging.debug(str(args.count) + " measurements collected. Exiting in a moment.")
 					p.disconnect()
 					time.sleep(5)
 					#It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
@@ -359,33 +364,33 @@ if args.device:
 						os.system("kill " + bluepypid)
 						logging.debug("Killed bluepy with pid: " + str(bluepypid))
 					os._exit(0)
-				print("")
+				#logging.debug("")
 				continue
 		except Exception as e:
-			print("Connection lost")
+			logging.debug("Connection lost")
+			logging.error(e)
+			logging.error(traceback.format_exc())		
 			connectionLostCounter +=1
 			if connected is True: #First connection abort after connected
 				unconnectedTime=int(time.time())
 				connected=False
 			if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
-				print("Maximum numbers of unsuccessful connections reaches, exiting")
+				logging.debug("Maximum numbers of unsuccessful connections reaches, exiting")
 				os._exit(0)
 			time.sleep(1)
-			logging.debug(e)
-			logging.debug(traceback.format_exc())		
 			
-		print ("Waiting...")
+		logging.debug ("Waiting...")
 		# Perhaps do something else here
 
 elif args.atc:
-	print("Script started in ATC Mode")
-	print("----------------------------")
-	print("In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.")
-	print("Also --name Argument is ignored, if you require names, please use --namefile.")
-	print("In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.")
-	print("ATC mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
-	print("You have to redo this step if you upgrade your python version.")
-	print("----------------------------")
+	logging.debug("Script started in ATC Mode")
+	logging.debug("----------------------------")
+	logging.debug("In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.")
+	logging.debug("Also --name Argument is ignored, if you require names, please use --namefile.")
+	logging.debug("In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.")
+	logging.debug("ATC mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
+	logging.debug("You have to redo this step if you upgrade your python version.")
+	logging.debug("----------------------------")
 
 	import sys
 	import bluetooth._bluetooth as bluez
@@ -399,13 +404,13 @@ elif args.atc:
 	if args.devicelistfile:
 		import configparser
 		if not os.path.exists(args.devicelistfile):
-			print ("Error specified device list file '",args.devicelistfile,"' not found")
+			logging.debug ("Error specified device list file '" + args.devicelistfile + "' not found")
 			os._exit(1)
 		sensors = configparser.ConfigParser()
 		sensors.read(args.devicelistfile)
 
 	if args.onlydevicelist and not args.devicelistfile:
-		print("Error: --onlydevicelist requires --devicelistfile <devicelistfile>")
+		logging.debug("Error: --onlydevicelist requires --devicelistfile <devicelistfile>")
 		os._exit(1)
 
 	dev_id = args.interface  # the bluetooth device is hci0
@@ -414,7 +419,7 @@ elif args.atc:
 	try:
 		sock = bluez.hci_open_dev(dev_id)
 	except:
-		print("Cannot open bluetooth device %i" % dev_id)
+		logging.debug("Cannot open bluetooth device %i" + str(dev_id))
 		raise
 
 	enable_le_scan(sock, filter_duplicates=False)
@@ -427,7 +432,7 @@ elif args.atc:
 			if args.watchdogtimer:
 				lastBLEPaketReceived = time.time()
 			lastBLEPaketReceived = time.time()
-			#print("reveived BLE packet")
+			#logging.debug("reveived BLE packet")
 			data_str = raw_packet_to_str(data)
 			ATCPaketMAC = data_str[10:22].upper()
 			macStr = mac.replace(":","").upper() 
@@ -440,8 +445,8 @@ elif args.atc:
 					lastAdvNumber = None
 				if lastAdvNumber == None or lastAdvNumber != advNumber:
 					advCounter[macStr] = advNumber
-					print("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
-					#print("AdvNumber: ", advNumber)
+					logging.debug("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+					#logging.debug("AdvNumber: ", advNumber)
 					#temp = data_str[22:26].encode('utf-8')
 					#temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big') / 10.
 					global measurements
@@ -454,15 +459,15 @@ elif args.atc:
 
 					
 					temperature = int(data_str[22:26],16) / 10.
-					print("Temperature: ", temperature)
+					logging.debug("Temperature: " + str(temperature))
 					humidity = int(data_str[26:28], 16)
-					print("Humidity: ", humidity)
+					logging.debug("Humidity: " + str(humidity))
 					batteryVoltage = int(data_str[30:34], 16) / 1000
-					print ("Battery voltage:", batteryVoltage,"V")
+					logging.debug ("Battery voltage: " + str(batteryVoltage) +"V")
 
 					if args.battery:
 						batteryPercent = int(data_str[28:30], 16)
-						print ("Battery:", batteryPercent,"%")
+						logging.debug ("Battery: " + str(batteryPercent) +"%")
 						measurement.battery = batteryPercent
 					measurement.humidity = humidity
 					measurement.temperature = temperature
@@ -475,15 +480,15 @@ elif args.atc:
 							measurement.sensorname = mac
 						if "offset1" in sensors[mac] and "offset2" in sensors[mac] and "calpoint1" in sensors[mac] and "calpoint2" in sensors[mac]:
 							measurement.humidity = calibrateHumidity2Points(humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
-							print ("Humidity calibrated (2 points calibration): ", measurement.humidity)
+							logging.debug ("Humidity calibrated (2 points calibration): " + str(measurement.humidity))
 						elif "humidityOffset" in sensors[mac]:
 							measurement.humidity = humidity + int(sensors[mac]["humidityOffset"])
-							print ("Humidity calibrated (offset calibration): ", measurement.humidity)
+							logging.debug ("Humidity calibrated (offset calibration): " + str(measurement.humidity))
 					else:
 						measurement.sensorname = mac
 
 					measurements.append(measurement)
-					print("")	
+					#logging.debug("")	
 
 		if  args.watchdogtimer:
 			keepingLEScanRunningThread = threading.Thread(target=keepingLEScanRunning)

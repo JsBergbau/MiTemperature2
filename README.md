@@ -39,7 +39,7 @@ After a Python upgrade, you have to redo the above step.
 
 ```
 ./LYWSD03MMC.py
-usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
+usage: LYWSD03MMC.py [-h] [-q] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--count N] [--interface N] [--unreachable-count N]
                      [--round] [--debounce] [--offset OFFSET]
                      [--TwoPointCalibration] [--calpoint1 CALPOINT1]
@@ -51,6 +51,7 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -q, --quiet           quiet mode - suppresses most log messages
   --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
   --battery [], -b []   Get estimated battery level
