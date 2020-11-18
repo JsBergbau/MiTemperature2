@@ -119,6 +119,7 @@ def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if 
 			enable_le_scan(sock, filter_duplicates=False)
 			BLERestartCounter += 1
 			print("")
+			time.sleep(5) #give some time to take effect
 
 
 def calibrateHumidity2Points(humidity, offset1, offset2, calpoint1, calpoint2):
