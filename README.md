@@ -355,7 +355,14 @@ E.g. mine shows 79 % RH when actually there is 75 %. Excecute the script with `-
 
 ### Two point calibration
 
-The offset is not linear over the whole humidity values. So you should calibrate at another point. MagnesiumChloride is recommended giving about 33% RH at 20 °C. Also Calciumchloride is suitable, but the humidity depends more on temperature. Be sure to have 20 °C. https://www.salzwiki.de/index.php/Deliqueszenzfeuchte
+The offset is not linear over the whole humidity values, see https://www.rotronic.com/media/productattachments/files/c/a/capacitive_humidity_sensor_final.pdf Page 2.
+
+>Linearity Errors. The typical response of a relative humidity capacitive sensor (between 0 and 100 percent RH) is not linear. Depending on the correction made by the electronic circuits, the instrument may have a linearity error.
+
+So you should calibrate at another point. MagnesiumChloride is recommended as giving about 33% RH at 20 °C. Please use very pure MgCl. It is also sold as bath salt and stuff like that. For high accuracy please use a purity > 99 %.
+
+Also Calciumchloride is suitable, but the humidity depends more on temperature. Be sure to have 20 °C. https://www.salzwiki.de/index.php/Deliqueszenzfeuchte
+CaCl is often found in these small non-electric dehumidifiers which you can refill with refill packs.
 
 My Xiaomi Bluetooth thermometer shows 39% RH at 33% RH. So wie here have an offset of 6.
 Another hygrometer show 69 % at 75% RH and 33% RH at 33% RH. So offset +6 at 75% TH and offset 0 at 33% RH.
