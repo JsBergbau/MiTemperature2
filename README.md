@@ -140,6 +140,7 @@ An example is given in the sensors.ini file in this repository. It is quite self
 
 ```
 [default]
+[info]
 info1=MAC Adresses must be in UPPERCASE otherwise sensor won't be found by the script
 info2=now all available options are listet. If offset1, offset2, calpoint1 and calpoint2 are given 2Point calibration is used instead of humidityOffset.
 info3= Note options are case sensitive
@@ -148,25 +149,31 @@ sensorname=Specify an easy readable name
 humidityOffset=-5
 offset1 = -10
 offset2 = 10
-calpoint1 = 75
-calpoint2 = 33
+calpoint1 = 33
+calpoint2 = 75
 
 ;[AA:BB:CC:DD:EE:FF]
 ; sensorname=Bathroom
 ; humidityOffset=-30
 ; offset1 = -10
 ; offset2 = -10
-; calpoint1 = 75
-; calpoint2 = 33
+; calpoint1 = 33
+; calpoint2 = 75
 
 [BD:AD:CA:1F:4D:12]
 sensorname=Living Room
-humidityOffset=10
-offset1 = -10
+offset1 = -2
+offset2 = 2
+calpoint1 = 33
+calpoint2 = 75
 ```
 
 `--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
 
+Hint for storing the data in influx: 
+When you have configured an advertisment interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
+
+With original firmware where you connect to each sensor every 6 seconds an measurement is sent and storing every 10 seconds a measurement is a good value.
 
 ## Tips
 
@@ -342,12 +349,16 @@ sudo hciconfig hci0 down
 sudo hciconfig hci0 up
 ```
 
+Sometimes bluetooth gets stucks, especially if you have other software accessing/using bluetooth on your devices. After a reboot everything was fine again. If that happens a lot, you can use an additional Blueooth receiver and use it with the `--interface` option.
+
 ## Calibration
 
 Note: If you have calibrated your sensors and flash ATC firmware, you have to calibrate them again.
 
 Especially humidity value is often not very accurate. You get better results if you calibrate against a known humidity. This can be done very easy with common salt (NaCl). Make a saturated solution and put it together with the Xiaomi Bluetooth thermometer in an airtight box. Ensure that no (salt) water gets in contact with the device. Saltwater is very corrosive.
-Wait about 24 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year.
+Wait about 24 - 48 hours with a constant temperature. You should now have about 75 % relative humidity. I don't know how long it takes for the sensors to drift. So I will redo this procedure about every year. 
+
+A quite constant temperature while calibration is very important, because with temperature also humidity changes and it takes some time for the system to rebalance the humidity. In my experiments at 20 °C room temperature it took about 48 hours until humidity readings were quite stable and didn't change anymore. So give it time. If you take the sensors out of calibration humidity too early they haven't reached the final value yet.
 
 ### Offset calibration
 
@@ -430,3 +441,39 @@ All data received from the sensor is stored in a list and transmitted sequential
 ## Send metrics to Prometheus
 
 [Read instruction about integartion with Prometheus Push Gateway](./prometheus/README.md)
+
+## Callback to Node-RED
+Finally there is a callback and sample flows to send the data to Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your Receivers. 
+
+This solution makes it also very easy to have multiple Receivers and you can easily move the devices around between them. As long as one device reaches one receiver everything will work. If it reaches multiple receivers you can even reboot them without data loss.
+
+To use the script with Node-RED just import the flows from `MiTemperature2 Node-Red Flows.txt`
+With that flow you can even start the script in ATC-Mode via Node-RED. If you are user `pi` and in your home directory, clone this Repo via `git clone https://github.com/JsBergbau/MiTemperature2`, make `LYWSD03MMC.py` and `./sendToNodeRed.sh` executable and you even have not to change the script execution part.
+
+The Node-RED flow is documented with comments for easy usage. If theres missing some information, just open an issue and I'll have a look.
+
+For easily switching between filtering of Node-Red and the Python-Script LYWSD03MMC there are two scripts included.
+``` ./iniToJSON.py -h
+usage: iniToJSON.py [-h] --readfile filename [--writefile filename]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --readfile filename, -rf filename
+                        Specify filename of ini-File to convert
+  --writefile filename, -wf filename
+                        Specify filename of json-File to convert
+```
+Use these to convert between ini and JSON for usage in Node-RED.
+
+```./jsonToIni.py -h
+usage: jsonToIni.py [-h] --readfile filename --writefile filename
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --readfile filename, -rf filename
+                        Specify filename of json-File to convert
+  --writefile filename, -wf filename
+                        Specify filename of json-File to convert
+```
+
+
