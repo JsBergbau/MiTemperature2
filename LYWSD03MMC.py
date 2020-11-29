@@ -453,8 +453,9 @@ elif args.atc:
 						measurement.timestamp = int(time.time())
 
 
-					
-					temperature = int(data_str[22:26],16) / 10.
+					print("rohwerte: ",data_str[22:26])
+					#temperature = int(data_str[22:26],16) / 10.
+					temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big',signed=True) / 10.
 					print("Temperature: ", temperature)
 					humidity = int(data_str[26:28], 16)
 					print("Humidity: ", humidity)
