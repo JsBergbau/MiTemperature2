@@ -175,6 +175,8 @@ When you have configured an advertisment interval of 10 seconds: Ideally store o
 
 With original firmware where you connect to each sensor every 6 seconds an measurement is sent and storing every 10 seconds a measurement is a good value.
 
+ATC mode uses passive scanning for saving battery life of the sensors. Read more about this here https://github.com/JsBergbau/MiTemperature2/issues/41#issuecomment-735361200
+
 ## Tips
 
 Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
