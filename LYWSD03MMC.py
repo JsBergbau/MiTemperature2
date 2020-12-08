@@ -24,16 +24,17 @@ class Measurement:
 	battery: int = 0
 	timestamp: int = 0
 	sensorname: str	= ""
+	rssi: int = 0 
 
-	def __eq__(self, other):
+	def __eq__(self, other): #rssi may be different
 		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage and self.sensorname == other.sensorname:
-			return  True
+			return True
 		else:
 			return False
 
 measurements=deque()
 #globalBatteryLevel=0
-previousMeasurement=Measurement(0,0,0,0,0,0,0)
+previousMeasurement=Measurement(0,0,0,0,0,0,0,0)
 identicalCounter=0
 
 def signal_handler(sig, frame):
@@ -86,6 +87,9 @@ def thread_SendingData():
 			if (args.battery):
 				fmt +=",batteryLevel"
 				params += " " + str(mea.battery)
+			if (args.rssi):
+				fmt +=",rssi"
+				params += " " + str(mea.rssi)
 			params += " " + str(mea.timestamp)
 			fmt +=",timestamp"
 			cmd = path + "/" + args.callback + " " + fmt + " " + params
@@ -152,7 +156,7 @@ class MyDelegate(btle.DefaultDelegate):
 	def handleNotification(self, cHandle, data):
 		global measurements
 		try:
-			measurement = Measurement(0,0,0,0,0,0,0)
+			measurement = Measurement(0,0,0,0,0,0,0,0)
 			if args.influxdb == 1:
 				measurement.timestamp = int((time.time() // 10) * 10)
 			else:
@@ -207,9 +211,11 @@ class MyDelegate(btle.DefaultDelegate):
 			if args.TwoPointCalibration:
 				humidityCalibrated= calibrateHumidity2Points(humidity,args.offset1,args.offset2, args.calpoint1, args.calpoint2)
 				print("Calibrated humidity: " + str(humidityCalibrated))
-				measurement.calibratedHumidity = humidityCalibrated	
+				measurement.calibratedHumidity = humidityCalibrated
 
-			measurements.append(measurement)
+			if(args.callback):
+				measurements.append(measurement)
+		
 
 		except Exception as e:
 			print("Fehler")
@@ -261,6 +267,8 @@ atcgroup.add_argument("--atc","-a", help="Read the data of devices with custom A
 atcgroup.add_argument("--watchdogtimer","-wdt",metavar='X', type=int, help="Re-enable scanning after not receiving any BLE packet after X seconds")
 atcgroup.add_argument("--devicelistfile","-df",help="Specify a device list file giving further details to devices")
 atcgroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')
+atcgroup.add_argument("--rssi","-rs", help="Report RSSI via callback",action='store_true')
+
 
 args=parser.parse_args()
 if args.device:
@@ -446,14 +454,13 @@ elif args.atc:
 					#temp = data_str[22:26].encode('utf-8')
 					#temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big') / 10.
 					global measurements
-					measurement = Measurement(0,0,0,0,0,0,0)
+					measurement = Measurement(0,0,0,0,0,0,0,0)
 					if args.influxdb == 1:
 						measurement.timestamp = int((time.time() // 10) * 10)
 					else:
 						measurement.timestamp = int(time.time())
 
 
-					print("rohwerte: ",data_str[22:26])
 					#temperature = int(data_str[22:26],16) / 10.
 					temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big',signed=True) / 10.
 					print("Temperature: ", temperature)
@@ -461,6 +468,7 @@ elif args.atc:
 					print("Humidity: ", humidity)
 					batteryVoltage = int(data_str[30:34], 16) / 1000
 					print ("Battery voltage:", batteryVoltage,"V")
+					print ("RSSI:", rssi, "dBm")
 
 					if args.battery:
 						batteryPercent = int(data_str[28:30], 16)
@@ -469,6 +477,7 @@ elif args.atc:
 					measurement.humidity = humidity
 					measurement.temperature = temperature
 					measurement.voltage = batteryVoltage
+					measurement.rssi = rssi
 
 					if mac in sensors:
 						try:
@@ -483,8 +492,9 @@ elif args.atc:
 							print ("Humidity calibrated (offset calibration): ", measurement.humidity)
 					else:
 						measurement.sensorname = mac
-
-					measurements.append(measurement)
+					if(args.callback):
+						measurements.append(measurement)
+					#print("Length:", len(measurements))
 					print("")	
 
 		if  args.watchdogtimer:

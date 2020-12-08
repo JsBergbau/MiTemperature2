@@ -327,7 +327,7 @@ def parse_le_advertising_events(sock, mac_addr=None, packet_length=None,
 
     try:
         while True:
-            pkt = sock.recv(255)
+            pkt = full_pkt = sock.recv(255)
             ptype, event, plen = struct.unpack("BBB", pkt[:3])
 
             if event != LE_META_EVENT:
@@ -354,7 +354,8 @@ def parse_le_advertising_events(sock, mac_addr=None, packet_length=None,
                 continue
 
             data = pkt[9:-1]
-            rssi = struct.unpack("b", pkt[-2:-1])[0]
+
+            rssi = struct.unpack("b", full_pkt[len(full_pkt)-1:len(full_pkt)])[0]
 
             if mac_addr and mac_addr_str not in mac_addr:
                 if debug:

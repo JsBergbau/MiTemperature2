@@ -47,7 +47,7 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
                      [--skipidentical N] [--influxdb N] [--atc]
                      [--watchdogtimer X] [--devicelistfile DEVICELISTFILE]
-                     [--onlydevicelist]
+                     [--onlydevicelist] [--rssi]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -105,6 +105,7 @@ ATC mode related arguments:
                         devices
   --onlydevicelist, -odl
                         Only read devices which are in the device list file
+  --rssi, -rs           Report RSSI via callback
 
 ```
 
@@ -171,6 +172,8 @@ calpoint2 = 75
 ```
 
 `--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
+
+`--rssi` Reports the RSSI via callback
 
 Hint for storing the data in influx: 
 When you have configured an advertisment interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
@@ -251,7 +254,7 @@ Battery level: 84
 ### Sample output ATC mode
 
 ```
-./LYWSD03MMC.py --atc --watchdogtimer 5 -b
+./LYWSD03MMC.py --atc
 Script started in ATC Mode
 ----------------------------
 In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.
@@ -267,49 +270,95 @@ Enable LE scan
 scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
 socket filter set to ptype=HCI_EVENT_PKT event=LE_META_EVENT
 Listening ...
-Watchdog: Did not receive any BLE Paket within 1605398698 s. Restarting BLE scan. Count: 1
-Disable LE scan
-Enable LE scan
-scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
-BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0384d0b58b1 -79
-Temperature:  19.2
-Humidity:  56
-Battery voltage: 2.904 V
-Battery: 77 %
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00dc2e420afdd6 -60
+Temperature:  22.0
+Humidity:  46
+Battery voltage: 2.813 V
+RSSI: -60 dBm
 
-BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d3344d0b56cd -51
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00e22d570bab16 -90
+Temperature:  22.6
+Humidity:  45
+Battery voltage: 2.987 V
+RSSI: -90 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx009d314f0b6456 -65
+Temperature:  15.7
+Humidity:  49
+Battery voltage: 2.916 V
+RSSI: -65 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2313d0ace30 -90
+Temperature:  21.0
+Humidity:  49
+Battery voltage: 2.766 V
+RSSI: -90 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d331430b0579 -91
 Temperature:  21.1
+Humidity:  49
+Battery voltage: 2.821 V
+RSSI: -91 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx008431530b872b -77
+Temperature:  13.2
+Humidity:  49
+Battery voltage: 2.951 V
+RSSI: -77 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00cf344d0b5264 -81
+Temperature:  20.7
 Humidity:  52
+Battery voltage: 2.898 V
+RSSI: -81 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d5304d0b5607 -64
+Temperature:  21.3
+Humidity:  48
 Battery voltage: 2.902 V
-Battery: 77 %
+RSSI: -64 dBm
 
-BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0384d0b58b2 -78
-Temperature:  19.2
-Humidity:  56
-Battery voltage: 2.904 V
-Battery: 77 %
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00bf36500b765d -87
+Temperature:  19.1
+Humidity:  54
+Battery voltage: 2.934 V
+RSSI: -87 dBm
 
-BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d4344d0b56ce -50
-Temperature:  21.2
-Humidity:  52
-Battery voltage: 2.902 V
-Battery: 77 %
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2303a0ab84b -73
+Temperature:  21.0
+Humidity:  48
+Battery voltage: 2.744 V
+RSSI: -73 dBm
 
-Watchdog: Did not receive any BLE Paket within 5 s. Restarting BLE scan. Count: 2
-Disable LE scan
-Enable LE scan
-scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
-BLE packet: AA:BB:CC:DD:EE:FF 00 1110161a18aabbccddeeff00c0394d0b58b3 -77
-Temperature:  19.2
-Humidity:  57
-Battery voltage: 2.904 V
-Battery: 77 %
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx008431530b872c -77
+Temperature:  13.2
+Humidity:  49
+Battery voltage: 2.951 V
+RSSI: -77 dBm
 
-BLE packet: FF:EE:DD:CC:BB:AA 00 1110161a18ffeeddccbbaa00d4344d0b56cf -49
-Temperature:  21.2
-Humidity:  52
-Battery voltage: 2.902 V
-Battery: 77 %
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2314f0b60d1 -91
+Temperature:  21.0
+Humidity:  49
+Battery voltage: 2.912 V
+RSSI: -91 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d330400aedf1 -94
+Temperature:  21.1
+Humidity:  48
+Battery voltage: 2.797 V
+RSSI: -94 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00484a420af634 -91
+Temperature:  7.2
+Humidity:  74
+Battery voltage: 2.806 V
+RSSI: -91 dBm
+
+BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d231530b8ab0 -88
+Temperature:  21.0
+Humidity:  49
+Battery voltage: 2.954 V
+RSSI: -88 dBm
 ```
 
 ### More info
@@ -422,14 +471,16 @@ Calibrated humidity: 49
 
 Via the --call option a script can be passed to sent the data to.
 Example
-`./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --callback sendData.sh`
+`./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --callback sendToFile.sh`
 If you don't give the sensor a name, the MAC-Address is used. The callback script must be within the same folder as this script.
 The values outputted depends on the options like calibration or battery. So the format is printed in the first argument.
 Example callback
 
 ```
 #!/bin/bash
+# This is quite useful for testing
 echo $@ >> data.txt
+exit 0
 ```
 
 Gives in data.txt `sensorname,temperature,humidity,voltage,humidityCalibrated,timestamp MySensor 20.61 54 2.944 49 1582120122`
