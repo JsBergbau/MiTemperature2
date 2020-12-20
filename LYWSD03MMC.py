@@ -38,7 +38,9 @@ previousMeasurement=Measurement(0,0,0,0,0,0,0,0)
 identicalCounter=0
 
 def signal_handler(sig, frame):
-        os._exit(0)
+	if args.atc:
+		disable_le_scan(sock)	
+	os._exit(0)
 		
 def watchDog_Thread():
 	global unconnectedTime
