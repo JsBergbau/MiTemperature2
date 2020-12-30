@@ -9,7 +9,9 @@ A4:C1:38:9C:E3:70 chambre_verte
 A4:C1:38:BB:54:29 cave_buanderie
 A4:C1:38:CF:FD:78 chambre_bleue"
 
+while :; do
 echo "$captors" | while read captor; do
   # python3 ./LYWSD03MMC.py --device ${captor% *} --round --debounce -c 1
-  python3 ./LYWSD03MMC.py --device ${captor% *} --round --debounce -call ./prometheus/sendToPrometheus.py -n ${captor#* } -c 1
+  timeout -k 5 30 python3 ./LYWSD03MMC.py --device ${captor% *} --round --debounce -call ./prometheus/sendToPrometheus.py -n ${captor#* } -c 1 -urc 1
+done
 done
