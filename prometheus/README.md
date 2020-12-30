@@ -18,7 +18,7 @@ honor_labels: true
 
 Script will make one mesure and call script that send data to prometheus push gateway
 
-    > python3 ./LYWSD03MMC.py --device XX:XX:XX:XX:XX:XX --round --debounce -call ./prometheus/promExporter.py -n living_room -c 1
+    > python3 ./LYWSD03MMC.py --device XX:XX:XX:XX:XX:XX --round --debounce -call ./prometheus/sendToPrometheus.py -n living_room -c 1
 
 ## Grafana Dashboard
 

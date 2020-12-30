@@ -3,7 +3,7 @@
 import sys
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
-PROMETHEUS_URL = "http://raspberrypi:9091"
+PROMETHEUS_URL = "http://localhost:9091"
 
 val_sensor = sys.argv[2]
 val_temp = sys.argv[3]
@@ -20,4 +20,4 @@ t.labels(val_sensor).set(val_temp)
 h.labels(val_sensor).set(val_hum)
 bv.labels(val_sensor).set(val_bat)
 
-push_to_gateway(PROMETHEUS_URL, job='tempBatch', registry=registry)
+push_to_gateway(PROMETHEUS_URL, job='tempBatch', grouping_key={'sensor': val_sensor}, registry=registry)
