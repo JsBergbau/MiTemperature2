@@ -8,6 +8,7 @@ import sys
 
 domoticzserver = "192.168.1.36"
 idx_temp = "52"
+#idx_temp = sys.argv[2] #uncomment this line for ATC Mode. You have to configure the sensorname to your domoticz idx, for details please see https://github.com/JsBergbau/MiTemperature2/issues/59
 
 val_temp = sys.argv[3]  # change to sys.argv[5] for calibrated
 val_hum = sys.argv[4]
