@@ -443,7 +443,7 @@ elif args.atc:
 			ATCPaketMAC = data_str[10:22].upper()
 			macStr = mac.replace(":","").upper() 
 			atcIdentifier = data_str[6:10].upper()
-			if(atcIdentifier == "1A18" and ATCPaketMAC == macStr) and not args.onlydevicelist or (atcIdentifier == "1A18" and mac in sensors): #only Data from ATC devices, double checked
+			if(atcIdentifier == "1A18" and ATCPaketMAC == macStr) and not args.onlydevicelist or (atcIdentifier == "1A18" and mac in sensors) and len(data_str) == 36: #only Data from ATC devices, double checked
 				advNumber = data_str[-2:]
 				if macStr in advCounter:
 					lastAdvNumber = advCounter[macStr]
