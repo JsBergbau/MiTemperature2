@@ -238,7 +238,7 @@ def connect():
 # Main loop --------
 parser=argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
-parser.add_argument("--battery","-b", help="Get estimated battery level", metavar='', type=int, nargs='?', const=1)
+parser.add_argument("--battery","-b", help="Get estimated battery level, in ATC-Mode: Get battery level from device", metavar='', type=int, nargs='?', const=1)
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
 parser.add_argument("--unreachable-count","-urc", help="Exit after N unsuccessful connection tries", metavar='N', type=int, default=0)
@@ -265,7 +265,7 @@ callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identi
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
 
 atcgroup = parser.add_argument_group("ATC mode related arguments")
-atcgroup.add_argument("--atc","-a", help="Read the data of devices with custom ATC firmware flashed",action='store_true')
+atcgroup.add_argument("--atc","-a", help="Read the data of devices with custom ATC firmware flashed, use --battery to get battery level additionaly in percent",action='store_true')
 atcgroup.add_argument("--watchdogtimer","-wdt",metavar='X', type=int, help="Re-enable scanning after not receiving any BLE packet after X seconds")
 atcgroup.add_argument("--devicelistfile","-df",help="Specify a device list file giving further details to devices")
 atcgroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')

@@ -53,7 +53,8 @@ optional arguments:
   -h, --help            show this help message and exit
   --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
-  --battery [], -b []   Get estimated battery level
+  --battery [], -b []   Get estimated battery level, in ATC-Mode: Get battery
+                        level from device
   --count N, -c N       Read/Receive N measurements and then exit script
   --interface N, -i N   Specifiy the interface number to use, e.g. 1 for hci1
   --unreachable-count N, -urc N
@@ -96,7 +97,8 @@ Callback related arguments:
 
 ATC mode related arguments:
   --atc, -a             Read the data of devices with custom ATC firmware
-                        flashed
+                        flashed, use --battery to get battery level
+                        additionaly in percent
   --watchdogtimer X, -wdt X
                         Re-enable scanning after not receiving any BLE packet
                         after X seconds
@@ -106,7 +108,6 @@ ATC mode related arguments:
   --onlydevicelist, -odl
                         Only read devices which are in the device list file
   --rssi, -rs           Report RSSI via callback
-
 ```
 
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
@@ -174,6 +175,8 @@ calpoint2 = 75
 `--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
 
 `--rssi` Reports the RSSI via callback
+
+`--battery` is also available in ATC mode. Instead of estimating the battery level, the batterylevel the device in percent reports is reported.
 
 Hint for storing the data in influx: 
 When you have configured an advertisment interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
