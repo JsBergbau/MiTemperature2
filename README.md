@@ -176,7 +176,7 @@ calpoint2 = 75
 
 `--rssi` Reports the RSSI via callback
 
-`--battery` is also available in ATC mode. Instead of estimating the battery level, the batterylevel the device in percent reports is reported.
+`--battery` is also available in ATC mode. Instead of estimating the battery level like in connection mode, the batterylevel in percent is reported exactly as on device's screen. 
 
 Hint for storing the data in influx: 
 When you have configured an advertisment interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
