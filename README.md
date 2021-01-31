@@ -1,3 +1,34 @@
+# Introduction
+
+
+This is fork from [JsBergbau/MiTemperature2](https://github.com/JsBergbau/MiTemperature2) awesome work.
+
+I've added a sendToMQTT_HA callback script that sends the data to an MQTT server and leverages Home-Assistant MQTT Autodiscovery creating a device for each sensor under MQTT integration. Each device has 4 entities: temperature, humidity, battery percentage and battery voltage.
+
+Replace each variable according to your environment:
+
+`mqtt.host` - MQTT Host
+
+`mqtt.username` - MQTT Username
+
+`mqtt.passwd`- MQTT Password
+
+
+### Home-Assistant device details:
+
+
+| Configuration | Value                    |
+| ------------- | ------------------------ |
+|name           | lywsd03mmc_"device_name" |
+|identifiers    | lywsd03mmc_"device_name" |
+|model          | LYWSD03MMC               |
+|manufacturer   | Xiaomi                   |
+
+
+
+
+
+
 # Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor
 
 With this script you can read out the value of your LYWSD03MMC sensor, e.g. with Raspberry PI. Note Raspbery Pi 4 has a very limited bluetooth range. PI Zero W gives much longer range.
