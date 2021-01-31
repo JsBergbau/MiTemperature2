@@ -535,3 +535,24 @@ optional arguments:
 ```
 
 
+## Callback to Home-Assistant MQTT integration
+etpedro https://github.com/etpedro has added a sendToMQTT_HA callback script that sends the data to an MQTT server and leverages Home-Assistant MQTT Autodiscovery creating a device for each sensor under MQTT integration. Each device has 4 entities: temperature, humidity, battery percentage and battery voltage.
+
+Replace each variable according to your environment:
+
+`mqtt.host` - MQTT Host
+
+`mqtt.username` - MQTT Username
+
+`mqtt.passwd`- MQTT Password
+
+
+### Home-Assistant device details:
+
+
+| Configuration | Value                    |
+| ------------- | ------------------------ |
+|name           | lywsd03mmc_"device_name" |
+|identifiers    | lywsd03mmc_"device_name" |
+|model          | LYWSD03MMC               |
+|manufacturer   | Xiaomi                   |
