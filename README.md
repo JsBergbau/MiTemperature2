@@ -536,7 +536,7 @@ optional arguments:
 
 
 ## Callback to Home-Assistant MQTT integration
-I've added a sendToMQTT_HA callback script that sends the data to an MQTT server and leverages Home-Assistant MQTT Autodiscovery creating a device for each sensor under MQTT integration. Each device has 4 entities: temperature, humidity, battery percentage and battery voltage.
+etpedro https://github.com/etpedro has added a sendToMQTT_HA callback script that sends the data to an MQTT server and leverages Home-Assistant MQTT Autodiscovery creating a device for each sensor under MQTT integration. Each device has 4 entities: temperature, humidity, battery percentage and battery voltage.
 
 Replace each variable according to your environment:
 
