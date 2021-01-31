@@ -391,8 +391,8 @@ if args.device:
 elif args.atc:
 	print("Script started in ATC Mode")
 	print("----------------------------")
-	print("In this mode all devices within reach are read out, unless a namefile and --namefileonlydevices is specified.")
-	print("Also --name Argument is ignored, if you require names, please use --namefile.")
+	print("In this mode all devices within reach are read out, unless a devicelistfile and --onlydevicelist is specified.")
+	print("Also --name Argument is ignored, if you require names, please use --devicelistfile.")
 	print("In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.")
 	print("ATC mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
 	print("You have to redo this step if you upgrade your python version.")
