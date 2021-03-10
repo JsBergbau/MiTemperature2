@@ -26,8 +26,8 @@ class Measurement:
 	sensorname: str	= ""
 	rssi: int = 0 
 
-	def __eq__(self, other): #rssi, voltage and battery may be different
-		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.sensorname == other.sensorname:
+	def __eq__(self, other): #rssi and voltage may be different
+		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.sensorname == other.sensorname:
 			return True
 		else:
 			return False
