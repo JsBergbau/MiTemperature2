@@ -26,9 +26,10 @@ class Measurement:
 	sensorname: str	= ""
 	rssi: int = 0 
 
-	def __eq__(self, other): #rssi and voltage may be different
+	def __eq__(self, other): #rssi may be different, so exclude it from comparison
 		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.sensorname == other.sensorname:
-			return True
+			#in atc mode also exclude voltage as it changes often due to frequent measurements
+			return True if args.atc else (self.voltage == other.voltage)
 		else:
 			return False
 
