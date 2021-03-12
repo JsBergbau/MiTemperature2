@@ -26,16 +26,17 @@ class Measurement:
 	sensorname: str	= ""
 	rssi: int = 0 
 
-	def __eq__(self, other): #rssi may be different
-		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage and self.sensorname == other.sensorname:
-			return True
+	def __eq__(self, other): #rssi may be different, so exclude it from comparison
+		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.sensorname == other.sensorname:
+			#in atc mode also exclude voltage as it changes often due to frequent measurements
+			return True if args.atc else (self.voltage == other.voltage)
 		else:
 			return False
 
 measurements=deque()
 #globalBatteryLevel=0
-previousMeasurement=Measurement(0,0,0,0,0,0,0,0)
-identicalCounter=0
+previousMeasurements={}
+identicalCounters={}
 
 def signal_handler(sig, frame):
 	if args.atc:
@@ -66,17 +67,18 @@ def watchDog_Thread():
 	
 
 def thread_SendingData():
-	global previousMeasurement
+	global previousMeasurements
 	global measurements
 	path = os.path.dirname(os.path.abspath(__file__))
 	while True:
 		try:
 			mea = measurements.popleft()
-			if (mea == previousMeasurement and identicalCounter < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 pakets per minute, 50 pakets --> writing at least every 5 minutes
-				print("Measurements are identical don't send data\n")
-				identicalCounter+=1
-				continue
-			identicalCounter=0
+			if mea.sensorname in previousMeasurements:
+				prev = previousMeasurements[mea.sensorname]
+				if (mea == prev and identicalCounters[mea.sensorname] < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 packets per minute, 50 packets --> writing at least every 5 minutes
+					print("Measurements for " + mea.sensorname + " are identical; don't send data\n")
+					identicalCounters[mea.sensorname]+=1
+					continue
 			fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
 			if ' ' in mea.sensorname:
 				sensorname = '"' + mea.sensorname + '"'
@@ -102,10 +104,11 @@ def thread_SendingData():
 					print ("Data couln't be send to Callback, retrying...")
 					time.sleep(5) #wait before trying again
 			else: #data was sent
-				previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
+				previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
+				identicalCounters[mea.sensorname]=0
 
 		except IndexError:
-			#print("Keine Daten")
+			#print("No Data")
 			time.sleep(1)
 		except Exception as e:
 			print(e)
