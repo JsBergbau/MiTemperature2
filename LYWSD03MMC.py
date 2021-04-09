@@ -417,6 +417,11 @@ elif args.atc:
 			os._exit(1)
 		sensors = configparser.ConfigParser()
 		sensors.read(args.devicelistfile)
+		#Convert macs in devicelist file to Uppercase
+		sensorsnew={}
+		for key in sensors:
+			sensorsnew[key.upper()] = sensors[key]
+		sensors = sensorsnew
 
 	if args.onlydevicelist and not args.devicelistfile:
 		print("Error: --onlydevicelist requires --devicelistfile <devicelistfile>")
@@ -441,13 +446,18 @@ elif args.atc:
 			if args.watchdogtimer:
 				lastBLEPaketReceived = time.time()
 			lastBLEPaketReceived = time.time()
-			#print("reveived BLE packet")
 			data_str = raw_packet_to_str(data)
-			ATCPaketMAC = data_str[10:22].upper()
+			preeamble = "10161a18"
+			paketStart = data_str.find(preeamble)
+			offset = paketStart + len(preeamble)
+				#print("reveived BLE packet")+
+			atcData_str = data_str[offset:]
+			ATCPaketMAC = atcData_str[0:6].upper()
 			macStr = mac.replace(":","").upper() 
-			atcIdentifier = data_str[6:10].upper()
-			if(atcIdentifier == "1A18" and ATCPaketMAC == macStr) and not args.onlydevicelist or (atcIdentifier == "1A18" and mac in sensors) and len(data_str) == 36: #only Data from ATC devices, double checked
-				advNumber = data_str[-2:]
+			atcIdentifier = data_str[(offset-4):offset].upper()
+
+			if(atcIdentifier == "1A18" and ATCPaketMAC == macStr) and not args.onlydevicelist or (atcIdentifier == "1A18" and mac in sensors) and len(atcData_str) == 26: #only Data from ATC devices, double checked
+				advNumber = atcData_str[-2:]
 				if macStr in advCounter:
 					lastAdvNumber = advCounter[macStr]
 				else:
@@ -467,16 +477,16 @@ elif args.atc:
 
 
 					#temperature = int(data_str[22:26],16) / 10.
-					temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big',signed=True) / 10.
+					temperature = int.from_bytes(bytearray.fromhex(atcData_str[12:16]),byteorder='big',signed=True) / 10.
 					print("Temperature: ", temperature)
-					humidity = int(data_str[26:28], 16)
+					humidity = int(atcData_str[16:18], 16)
 					print("Humidity: ", humidity)
-					batteryVoltage = int(data_str[30:34], 16) / 1000
+					batteryVoltage = int(atcData_str[20:24], 16) / 1000
 					print ("Battery voltage:", batteryVoltage,"V")
 					print ("RSSI:", rssi, "dBm")
 
 					if args.battery:
-						batteryPercent = int(data_str[28:30], 16)
+						batteryPercent = int(data_str[18:20], 16)
 						print ("Battery:", batteryPercent,"%")
 						measurement.battery = batteryPercent
 					measurement.humidity = humidity
