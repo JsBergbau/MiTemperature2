@@ -486,7 +486,7 @@ elif args.atc:
 					print ("RSSI:", rssi, "dBm")
 
 					if args.battery:
-						batteryPercent = int(data_str[18:20], 16)
+						batteryPercent = int(atcData_str[18:20], 16)
 						print ("Battery:", batteryPercent,"%")
 						measurement.battery = batteryPercent
 					measurement.humidity = humidity
