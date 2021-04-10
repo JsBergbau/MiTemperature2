@@ -451,7 +451,7 @@ elif args.atc:
 			paketStart = data_str.find(preeamble)
 			offset = paketStart + len(preeamble)
 				#print("reveived BLE packet")+
-			atcData_str = data_str[offset:]
+			atcData_str = data_str[offset:offset+26]
 			ATCPaketMAC = atcData_str[0:6].upper()
 			macStr = mac.replace(":","").upper() 
 			atcIdentifier = data_str[(offset-4):offset].upper()
