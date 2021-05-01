@@ -2,6 +2,10 @@
 #!/home/openhabian/Python3/Python-3.7.4/python -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
+print("---------------------------------------------")
+print("MiTemperature2 / ATC Thermometer version 3.0")
+print("---------------------------------------------")
+
 from bluepy import btle
 import argparse
 import os
@@ -14,6 +18,7 @@ import signal
 import traceback
 import math
 import logging
+import json
 
 @dataclass
 class Measurement:
@@ -37,6 +42,22 @@ measurements=deque()
 #globalBatteryLevel=0
 previousMeasurements={}
 identicalCounters={}
+MQTTClient=None
+MQTTTopic=None
+receiver=None
+subtopics=None
+mqttJSONDisabled=False
+
+def myMQTTPublish(topic,jsonMessage):
+	global subtopics
+	if len(subtopics) > 0:
+		messageDict = json.loads(jsonMessage)
+		for subtopic in subtopics:
+			print("Topic:",subtopic)
+			MQTTClient.publish(topic + "/" + subtopic,messageDict[subtopic],0)
+	if not mqttJSONDisabled:
+		MQTTClient.publish(topic,jsonMessage,1)
+
 
 def signal_handler(sig, frame):
 	if args.atc:
@@ -70,6 +91,8 @@ def thread_SendingData():
 	global previousMeasurements
 	global measurements
 	path = os.path.dirname(os.path.abspath(__file__))
+
+
 	while True:
 		try:
 			mea = measurements.popleft()
@@ -201,11 +224,11 @@ class MyDelegate(btle.DefaultDelegate):
 			measurement.humidity = humidity
 			measurement.voltage = voltage
 			measurement.sensorname = args.name
-			if args.battery:
+			#if args.battery:
 				#measurement.battery = globalBatteryLevel
-				batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
-				measurement.battery = batteryLevel
-				print("Battery level:",batteryLevel)
+			batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
+			measurement.battery = batteryLevel
+			print("Battery level:",batteryLevel)
 				
 
 			if args.offset:
@@ -220,6 +243,14 @@ class MyDelegate(btle.DefaultDelegate):
 
 			if(args.callback):
 				measurements.append(measurement)
+
+					
+			if(args.mqttconfigfile):
+				if measurement.calibratedHumidity == 0:
+					measurement.calibratedHumidity = measurement.humidity
+				jsonString=buildJSONString(measurement)
+				myMQTTPublish(topic,jsonString)
+				#MQTTClient.publish(MQTTTopic,jsonString,1)
 		
 
 		except Exception as e:
@@ -238,6 +269,22 @@ def connect():
 	p.withDelegate(MyDelegate("abc"))
 	return p
 
+def buildJSONString(measurement):
+	jsonstr = '{"temperature": ' + str(measurement.temperature) + ', "humidity": ' + str(measurement.humidity) + ', "voltage": ' + str(measurement.voltage) \
+		+ ', "calibratedHumidity": ' + str(measurement.calibratedHumidity) + ', "battery": ' + str(measurement.battery) \
+		+ ', "timestamp": '+ str(measurement.timestamp) +', "sensor": "' + measurement.sensorname + '", "rssi": ' + str(measurement.rssi) \
+		+ ', "receiver": "' + receiver  + '"}'
+	return jsonstr
+
+def MQTTOnConnect(client, userdata, flags, rc):
+    print("MQTT connected with result code "+str(rc))
+
+def MQTTOnPublish(client,userdata,mid):
+	print("MQTT published, Client:",client," Userdata:",userdata," mid:", mid)
+
+def MQTTOnDisconnect(client, userdata,rc):
+	print("MQTT disconnected, Client:", client, "Userdata:", userdata, "RC:", rc)	
+
 # Main loop --------
 parser=argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
@@ -245,6 +292,7 @@ parser.add_argument("--battery","-b", help="Get estimated battery level, in ATC-
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
 parser.add_argument("--unreachable-count","-urc", help="Exit after N unsuccessful connection tries", metavar='N', type=int, default=0)
+parser.add_argument("--mqttconfigfile","-mcf", help="specify a configurationfile for MQTT-Broker")
 
 
 rounding = parser.add_argument_group("Rounding and debouncing")
@@ -276,6 +324,57 @@ atcgroup.add_argument("--rssi","-rs", help="Report RSSI via callback",action='st
 
 
 args=parser.parse_args()
+
+if args.devicelistfile or args.mqttconfigfile:
+	import configparser
+
+if args.mqttconfigfile:
+	try:
+		import paho.mqtt.client as mqtt
+	except:
+		print("Please install MQTT-Library via 'pip/pip3 install paho-mqtt'")
+		exit(1)
+	if not os.path.exists(args.mqttconfigfile):
+		print ("Error MQTT config file '",args.mqttconfigfile,"' not found")
+		os._exit(1)
+	mqttConfig = configparser.ConfigParser()
+	# print(mqttConfig.sections())
+	mqttConfig.read(args.mqttconfigfile)
+	broker = mqttConfig["MQTT"]["broker"]
+	port = int(mqttConfig["MQTT"]["port"])
+	username = mqttConfig["MQTT"]["username"]
+	password = mqttConfig["MQTT"]["password"]
+	MQTTTopic = mqttConfig["MQTT"]["topic"]
+	lastwill = mqttConfig["MQTT"]["lastwill"]
+	lwt = mqttConfig["MQTT"]["lwt"]
+	clientid=mqttConfig["MQTT"]["clientid"]
+	receiver=mqttConfig["MQTT"]["receivername"]
+	subtopics=mqttConfig["MQTT"]["subtopics"]
+	if len(subtopics) > 0:
+		subtopics=subtopics.split(",")
+		if "nojson" in subtopics:
+			subtopics.remove("nojson")
+			mqttJSONDisabled=True
+
+	if len(receiver) == 0:
+		import socket
+		receiver=socket.gethostname()
+
+	client = mqtt.Client(clientid)
+	client.on_connect = MQTTOnConnect
+	client.on_publish = MQTTOnPublish
+	client.on_disconnect = MQTTOnDisconnect
+	client.reconnect_delay_set(min_delay=1,max_delay=60)
+	client.loop_start()
+	client.username_pw_set(username,password)
+	if len(lwt) > 0:
+		print("Using lastwill with topic:",lwt,"and message:",lastwill)
+		client.will_set(lwt,lastwill,qos=1)
+	
+	client.connect_async(broker,port)
+	MQTTClient=client
+	
+
 if args.device:
 	if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
 		adress=args.device
@@ -306,7 +405,6 @@ if args.device:
 
 	p=btle.Peripheral()
 	cnt=0
-
 
 	connected=False
 	#logging.basicConfig(level=logging.DEBUG)
@@ -411,7 +509,7 @@ elif args.atc:
 	advCounter=dict() 
 	sensors = dict()
 	if args.devicelistfile:
-		import configparser
+		#import configparser
 		if not os.path.exists(args.devicelistfile):
 			print ("Error specified device list file '",args.devicelistfile,"' not found")
 			os._exit(1)
@@ -485,15 +583,16 @@ elif args.atc:
 					print ("Battery voltage:", batteryVoltage,"V")
 					print ("RSSI:", rssi, "dBm")
 
-					if args.battery:
-						batteryPercent = int(atcData_str[18:20], 16)
-						print ("Battery:", batteryPercent,"%")
-						measurement.battery = batteryPercent
+					#if args.battery:
+					batteryPercent = int(atcData_str[18:20], 16)
+					print ("Battery:", batteryPercent,"%")
+					measurement.battery = batteryPercent
 					measurement.humidity = humidity
 					measurement.temperature = temperature
 					measurement.voltage = batteryVoltage
 					measurement.rssi = rssi
 
+					currentMQTTTopic = MQTTTopic
 					if mac in sensors:
 						try:
 							measurement.sensorname = sensors[mac]["sensorname"]
@@ -505,10 +604,21 @@ elif args.atc:
 						elif "humidityOffset" in sensors[mac]:
 							measurement.humidity = humidity + int(sensors[mac]["humidityOffset"])
 							print ("Humidity calibrated (offset calibration): ", measurement.humidity)
+						if "topic" in sensors[mac]:
+							currentMQTTTopic=sensors[mac]["topic"]
 					else:
 						measurement.sensorname = mac
+					
+					if measurement.calibratedHumidity == 0:
+						measurement.calibratedHumidity = measurement.humidity
+
 					if(args.callback):
 						measurements.append(measurement)
+					if(args.mqttconfigfile):
+						jsonString=buildJSONString(measurement)
+						myMQTTPublish(currentMQTTTopic,jsonString)
+						#MQTTClient.publish(currentMQTTTopic,jsonString,1)
+
 					#print("Length:", len(measurements))
 					print("")	
 

@@ -21,6 +21,12 @@ install via
 
 `pip3 install bluepy`
 
+If you use integrated MQTT client paho-mqtt is needed. Install via
+
+`pip3 install paho-mqtt`
+
+Instead of `pip3` it may be just `pip`, depeding of your installation.
+
 ### Requirements for reading Xiaomi Temperature and Humidity Sensor with ATC firmware
 
 Additional requirements if you want to use the atc version. If you don't use ATC version, please ignore this section.
@@ -38,16 +44,19 @@ After a Python upgrade, you have to redo the above step.
 ## Usage
 
 ```
-./LYWSD03MMC.py
+---------------------------------------------
+MiTemperature2 / ATC Thermometer version 3.0
+---------------------------------------------
 usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--count N] [--interface N] [--unreachable-count N]
-                     [--round] [--debounce] [--offset OFFSET]
-                     [--TwoPointCalibration] [--calpoint1 CALPOINT1]
-                     [--offset1 OFFSET1] [--calpoint2 CALPOINT2]
-                     [--offset2 OFFSET2] [--callback CALLBACK] [--name NAME]
-                     [--skipidentical N] [--influxdb N] [--atc]
-                     [--watchdogtimer X] [--devicelistfile DEVICELISTFILE]
-                     [--onlydevicelist] [--rssi]
+                     [--mqttconfigfile MQTTCONFIGFILE] [--round] [--debounce]
+                     [--offset OFFSET] [--TwoPointCalibration]
+                     [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
+                     [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
+                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
+                     [--influxdb N] [--atc] [--watchdogtimer X]
+                     [--devicelistfile DEVICELISTFILE] [--onlydevicelist]
+                     [--rssi]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -59,6 +68,8 @@ optional arguments:
   --interface N, -i N   Specifiy the interface number to use, e.g. 1 for hci1
   --unreachable-count N, -urc N
                         Exit after N unsuccessful connection tries
+  --mqttconfigfile MQTTCONFIGFILE, -mcf MQTTCONFIGFILE
+                        specify a configurationfile for MQTT-Broker
 
 Rounding and debouncing:
   --round, -r           Round temperature to one decimal place
@@ -108,6 +119,7 @@ ATC mode related arguments:
   --onlydevicelist, -odl
                         Only read devices which are in the device list file
   --rssi, -rs           Report RSSI via callback
+
 ```
 
 Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
@@ -124,30 +136,29 @@ With `--influxdb 1` you can use a influxdb optimized output. In this mode a time
 
 ### ATC Mode Usage
 
-Thanks to https://github.com/atc1441/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisments. In this mode you don't have to connect to the sensor. This saves a lot of power, especially in cases where the signal strength is low, see https://github.com/JsBergbau/MiTemperature2/issues/32 
-I've also noticed a higher range. In addition you can have multiple receivers, see Node-RED section https://github.com/JsBergbau/MiTemperature2#callback-to-node-red
-For longer batterylife and higher stability ATC mode is recommended.
+Thanks to https://github.com/pvvx/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisments. In this mode you don't have to connect to the sensor. This saves a lot of power, especially in cases where the signal strength is low, see https://github.com/JsBergbau/MiTemperature2/issues/32 
+I've also noticed a higher range. In addition you can have multiple receivers, see Node-RED section https://github.com/JsBergbau/MiTemperature2#node-red-flows
 
-In this mode the script listens for BLE advertisments and filters for ATC flashed LYWSD03MMC sensors. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
+For longer batterylife and higher stability ATC mode is recommended. In the flasher Webpage selecting only `Atc1441` as Advertising type is recommended. You can than increase the Advertising interval to save power for sensors with good reception. For sensors with weaker reception I would keep the default of 2500 ms. You could even increase it for sensors with very bad reception. 
 
-ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available.
+In ATC mode the script listens for BLE advertisments and filters for ATC flashed LYWSD03MMC sensors. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
+
+ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available. This is no real disadavantage because accuracy is impaired because of a lacking capciator, see https://github.com/pvvx/ATC_MiThermometer/issues/11#issuecomment-766776468
 
 `--watchdogtimer X` sometimes your device leaves BLE scanning mode, then you won't receive any data anymore. To avoid this after X seconds without receiving any BLE packet (not only from ATC sensors) BLE scanning mode is re-enabled. If you have configured your ATC LYWSD03MMC to advertise new data every 10 seconds, I recommend a setting of 5 seconds, so `--watchdogtimer 5`. On a Raspberry PI Zero W polling 10 sensors (2 are currently unreachable) this re-enabling BLE scan can happen a few times per minute. When polling 8 reachable sensors it happens less frequent but still at least once or twice a minute. 
 
-One note about new advertising data: The ATC LYWSD03MMC sends out the data about every second. After 10 seconds (or your configured interval) it advertises new data and to detect this, it increases the paket counter. Only the values of first paket of this series with the same paketcounter is displayed and reported by callback, since the data in one series is identical.
+One note about new advertising data: The ATC LYWSD03MMC sends out the data about every 2,5 seconds. After 10 seconds (4 advertising periods) it advertises new data and to detect this, it increases the paket counter. Only the values of first paket of this series with the same paketcounter is displayed and reported by callback, since the data in one series is identical.
 
-`--devicelistfile <filename>` Use this option to give your sensors a name/alias. This file can also be on a network drive. So you can keep it up to date on a single place for multiple receivers. Also in this file is space for calibration data. 
+`--devicelistfile <filename>` Use this option to give your sensors a name/alias. This file can also be on a network drive. So you can keep it up to date on a single place for multiple receivers. Also in this file is space for calibration data and you can give each device it's own MQTT topic.
 
 Note: ATC firmware shows other humidity values than the stock Xiaomi firmware, so you have to re-calibrate your sensors. The temperature value is unchanged compared to the Xiaomi sensor firmware.
 
 An example is given in the sensors.ini file in this repository. It is quite self explaining
 
-```
-[default]
+```ini
 [info]
-info1=MAC Adresses must be in UPPERCASE otherwise sensor won't be found by the script
-info2=now all available options are listet. If offset1, offset2, calpoint1 and calpoint2 are given 2Point calibration is used instead of humidityOffset.
-info3= Note options are case sensitive
+info1=now all available options are listet. If offset1, offset2, calpoint1 and calpoint2 are given 2Point calibration is used instead of humidityOffset.
+info1= Note options are case sensitive
 ;info4=Use semicolon to comment out lines
 sensorname=Specify an easy readable name
 humidityOffset=-5
@@ -155,21 +166,25 @@ offset1 = -10
 offset2 = 10
 calpoint1 = 33
 calpoint2 = 75
+topic=This sensor data will be published with this name when using integrated MQTT
+;If no topic is given, then default topic from MQTT config is used
 
-;[AA:BB:CC:DD:EE:FF]
+;[A4:C1:38:DD:EE:FF]
 ; sensorname=Bathroom
 ; humidityOffset=-30
 ; offset1 = -10
 ; offset2 = -10
 ; calpoint1 = 33
 ; calpoint2 = 75
+; topic = basement/Bathroom
 
-[BD:AD:CA:1F:4D:12]
+[A4:C1:38:1F:4D:81]
 sensorname=Living Room
 offset1 = -2
 offset2 = 2
 calpoint1 = 33
 calpoint2 = 75
+topic=basement/Living_Room
 ```
 
 `--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
@@ -185,6 +200,96 @@ With original firmware where you connect to each sensor every 6 seconds an measu
 
 ATC mode uses passive scanning for saving battery life of the sensors. Read more about this here https://github.com/JsBergbau/MiTemperature2/issues/41#issuecomment-735361200
 
+## Built in MQTT support
+
+Since Version 3 of MiTemperature2 there is built in support for MQTT. Especially if you receive a lot of sensors executing a callback for each measurement is quite expensive. For a raspberry PI Zero W for example with a few sensors I have an average CPU usage of 35 %, after using built in MQTT support only about 10 % CPU is used on average and there are also other services running. Quite a lot performance measurements were made to keep CPU usage for MQTT transmit low. 
+
+With callback every single message spawns a new process, a new TCP connection is established and then closed again. With integrated MQTT support one connection is opened at startup and then maintained all the time, saving a lot of CPU cycles and network overhead. 
+
+A testscript was made and tested on a raspberry PI4 booted with opion `force_turbo = 1`. With that option CPU runs always at 1500 MHz so measurements are easier to compare. Because `perf stat` wouldn't report the used CPU cycles measurement was taken via `time` command. 2000 generated values were sent and the time measured. With callback to Node-RED using curl time was about 77 seconds. Using mosquitto_pub and the same JSON string time was about 42. So mosquitto_pub and MQTT is a lot faster and efficient than using HTTP via curl. Then finally 2000 values were sent via integrated MQTT support. This took about 2 seconds whereas most of that time was required to import all libraries and so on. Transmitting 10.000 values via integrated MQTT only took about 4 seconds. So there is a massive performance plus with integrated MQTT.
+
+Data is transmitted that way (but can be changed to subtopic mode, see below):
+```json
+{
+  "temperature": 12.5,
+  "humidity": 58,
+  "voltage": 2.882,
+  "calibratedHumidity": 57,
+  "battery": 75,
+  "timestamp": 1619805618,
+  "sensor": "Living Room",
+  "rssi": -88,
+  "receiver": "raspberrypi"
+}
+```
+or when you don't use a device list file then in sensorname there is the mac address of the sensor.
+
+If you don't have provided any calibration data calibratedHumidity is the humidity value. So you can always use calibratedHumidity as the humidity value.
+
+These JSON messages are all send via MQTT QOS 1. So if connection to your broker gets lost, data isn't lost. Because it contains the timestamp you won't lose one single value. Currently the implementation of the used library has a max message queue of 65555. So when having 10 thermometers and each transmitting every 10 seconds a new value this makes one message per second, so your broker can be unreachable for about 18 hours bevore you will lose messages. If you have a scenario where 65555 messages are too few and data could be lost, please open an issue and I'll try to find a solution. 
+
+Important: To also not lose any message on the MQTT receiver, please also set QOS Level 1 and a client ID and disable clean-session flag. This way your MQTT broker stores all messages until your receiver is available again. Mosquitto stores default 1000 messages maximum per client with unlimited total size. You can change this via `max_queued_messages` see https://mosquitto.org/man/mosquitto-conf-5.html
+In the Node-RED sample flow (see below) the settings are setup this way.
+
+The example mqtt.conf file looks like
+
+```ini
+[MQTT]
+broker=127.0.0.1
+port=1883
+topic=ATCThermometer
+;username=
+;password=
+receivername=
+;subtopics=temperature,humidity
+
+
+[DEFAULT]
+;Do not change here, leave it as it is
+broker=127.0.0.1
+username=
+password=
+port=1883
+topic=ATCThermometer
+;lastwill message
+lastwill=
+;lastwill topic
+lwt=
+clientid=
+;If not specified, hostname is used as receivername
+receivername=
+;enable subtopics like temperature and humidity, combine with comma without spaces so "temperature,humidity"
+;to disable JSON output, add "nojson"
+;subtopics=nojson,temperature,humidity will send temperature and humidity
+subtopics=
+```
+
+broker, username, password and port are self-explaining. Also lastwill and lastwill topic (lwt) can be easily understood.
+Topic is the default topic under which data of all thermometers is published. You can override this per sensor, see above in the sensors.ini configuration. This default topic is the same as in the Node-RED flow example to receive all thermometers at one place.
+
+If you need seperate readings like `sensors/basement/kitchen/temperature` and `sensors/basement/kitchen/humidity` you can use the `subtopics` option. So if you need voltage, temperature and humidity, subtopics option would look like `subtopics=temperature,voltage,humidity` and it would be published under 
+``` 
+ATCThermometer/temperature
+ATCThermometer/voltage
+ATCThermometer/humidity
+``` 
+or when you have specified a topic for your particular sensor like `basement/livingroom/` then it would like
+``` 
+basement/livingroom/temperature
+basement/livingroom/voltage
+basement/livingroom/humidity
+``` 
+When using subtopics options you should configure a topic for each sensor otherwise values would get mixed under topic `ATCThermometer/temperature`, of course.
+
+
+Still there is also the JSON output at topic `ATCThermometer` respectively `basement/livingroom` 
+To disable JSON output in this case, append nojson to suptopics, so in this case `subtopics=temperature,voltage,humidity,nojson`
+
+Since the values transmitted as subtopics contain no timestamp it makes no sense to cache them in case of a transmission failure. So these subtopic values are only sent as MQTT QOS level 0.
+
+From a point of efficiency subtopics are less efficient because each subtopic needs a seperate transmission with its own overhead. So please use this feature only when really needed like with software like Homie that doesn't support JSON format.
+
+
 ## Tips
 
 Use `sudo hcitool lescan --duplicate` to get the MAC of your Sensor.
@@ -199,7 +304,7 @@ The temperature values often change between the same values. To get cleaner temp
 When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. 
 I can confirm the LYWSD03MMC also goes down to -9.9 °C. At colder temperatures it only shows an "L". But even at lower temperatures the correct temperature is still sent! So you even could use ist to watch the temperature in your freezer which is a lot below -9.9 °C. However batterylife may be significantly reduced at those low temperatures.
 
-### High battery usage
+### High battery usage (not applicable for recommende ATC mode)
 
 There is currently no way to detect a too high battery drain except having empty batteries in less than 2 month. If you encouter lots of empty batteries, please reduce distance between LYWSD03MMC sensor and your Bluetooth receiver. With a voltage drop of 0.1 V in 1.5 month everything is perfectly fine. If it is a bit more, don't worry. Can be a button cell of lower quality. For more infos please visit https://github.com/JsBergbau/MiTemperature2/issues/32
 
@@ -257,11 +362,14 @@ Battery level: 84
 ### Sample output ATC mode
 
 ```
-./LYWSD03MMC.py --atc
+../LYWSD03MMC.py --atc --mqttconfigfile mqtt.conf --devicelistfile MeineSensoren.ini
+---------------------------------------------
+MiTemperature2 / ATC Thermometer version 3.0
+---------------------------------------------
 Script started in ATC Mode
 ----------------------------
 In this mode all devices within reach are read out, unless a devicelistfile and --onlydevicelist is specified.
-Also --name Argument is ignored, if you need names, please use --devicelistfile.
+Also --name Argument is ignored, if you require names, please use --devicelistfile.
 In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.
 ATC mode usually requires root rights. If you want to use it with normal user rights,
 please execute "sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)"
@@ -273,95 +381,59 @@ Enable LE scan
 scan params: interval=1280.000ms window=1280.000ms own_bdaddr=public whitelist=no
 socket filter set to ptype=HCI_EVENT_PKT event=LE_META_EVENT
 Listening ...
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00dc2e420afdd6 -60
-Temperature:  22.0
-Humidity:  46
-Battery voltage: 2.813 V
-RSSI: -60 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00e22d570bab16 -90
-Temperature:  22.6
-Humidity:  45
-Battery voltage: 2.987 V
-RSSI: -90 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx009d314f0b6456 -65
-Temperature:  15.7
-Humidity:  49
-Battery voltage: 2.916 V
-RSSI: -65 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2313d0ace30 -90
-Temperature:  21.0
-Humidity:  49
-Battery voltage: 2.766 V
-RSSI: -90 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d331430b0579 -91
-Temperature:  21.1
-Humidity:  49
-Battery voltage: 2.821 V
-RSSI: -91 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx008431530b872b -77
-Temperature:  13.2
-Humidity:  49
-Battery voltage: 2.951 V
-RSSI: -77 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00cf344d0b5264 -81
-Temperature:  20.7
-Humidity:  52
-Battery voltage: 2.898 V
-RSSI: -81 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d5304d0b5607 -64
-Temperature:  21.3
-Humidity:  48
-Battery voltage: 2.902 V
-RSSI: -64 dBm
-
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00bf36500b765d -87
-Temperature:  19.1
-Humidity:  54
-Battery voltage: 2.934 V
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00c42914094c38 -87
+Temperature:  19.6
+Humidity:  41
+Battery voltage: 2.38 V
 RSSI: -87 dBm
+Battery: 20 %
+Humidity calibrated (2 points calibration):  40
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2303a0ab84b -73
-Temperature:  21.0
-Humidity:  48
-Battery voltage: 2.744 V
-RSSI: -73 dBm
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00b22c530b84c3 -93
+Temperature:  17.8
+Humidity:  44
+Battery voltage: 2.948 V
+RSSI: -93 dBm
+Battery: 83 %
+Humidity calibrated (2 points calibration):  44
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx008431530b872c -77
-Temperature:  13.2
-Humidity:  49
-Battery voltage: 2.951 V
-RSSI: -77 dBm
+MQTT connected with result code 0
+MQTT published, Client: <paho.mqtt.client.Client object at 0xb60b0bf0>  Userdata: None  mid: 1
+MQTT published, Client: <paho.mqtt.client.Client object at 0xb60b0bf0>  Userdata: None  mid: 2
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00c7343c0ac79b -62
+Temperature:  19.9
+Humidity:  52
+Battery voltage: 2.759 V
+RSSI: -62 dBm
+Battery: 60 %
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d2314f0b60d1 -91
-Temperature:  21.0
-Humidity:  49
-Battery voltage: 2.912 V
-RSSI: -91 dBm
+MQTT published, Client: <paho.mqtt.client.Client object at 0xb60b0bf0>  Userdata: None  mid: 3
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00b72a510b7499 -84
+Temperature:  18.3
+Humidity:  42
+Battery voltage: 2.932 V
+RSSI: -84 dBm
+Battery: 81 %
+Humidity calibrated (2 points calibration):  42
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d330400aedf1 -94
-Temperature:  21.1
-Humidity:  48
-Battery voltage: 2.797 V
-RSSI: -94 dBm
+MQTT published, Client: <paho.mqtt.client.Client object at 0xb60b0bf0>  Userdata: None  mid: 4
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00c4344e0b5811 -85
+Temperature:  19.6
+Humidity:  52
+Battery voltage: 2.904 V
+RSSI: -85 dBm
+Battery: 78 %
+Humidity calibrated (2 points calibration):  52
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00484a420af634 -91
-Temperature:  7.2
-Humidity:  74
-Battery voltage: 2.806 V
-RSSI: -91 dBm
+MQTT published, Client: <paho.mqtt.client.Client object at 0xb60b0bf0>  Userdata: None  mid: 5
+BLE packet: A4:C1:38:AA:BB:CC 00 1110161a18a4c138aabbcc00c835150957bd -50
+Temperature:  20.0
+Humidity:  53
+Battery voltage: 2.391 V
+RSSI: -50 dBm
+Battery: 21 %
+Humidity calibrated (2 points calibration):  53
 
-BLE packet: XX:XX:XX:XX:XX:XX 00 1110161a18xxxxxxxxxxxx00d231530b8ab0 -88
-Temperature:  21.0
-Humidity:  49
-Battery voltage: 2.954 V
-RSSI: -88 dBm
 ```
 
 ### More info
@@ -391,7 +463,7 @@ Lower power mode: To safe power the connection interval is reduced. For more det
 
 There can be done a lot more with that sensor. It stores highest and lowest values at hour level, has an integrated realtime clock and a few things more like changing the values for the comfort icon on the display. Credits go to jaggil who investigated on this and documented it well. You find the results here https://github.com/JsBergbau/MiTemperature2/issues/1 Just search for jaggil.
 
-### Troubleshooting
+### Troubleshooting (for connection mode which is not recommended anymore)
 
 Sometimes script fails to connect and tries to connect forever.
 Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
@@ -500,17 +572,22 @@ All data received from the sensor is stored in a list and transmitted sequential
 
 [Read instruction about integartion with Prometheus Push Gateway](./prometheus/README.md)
 
-## Callback to Node-RED
-Finally there is a callback and sample flows to send the data to Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your Receivers. 
+## Node-RED flows
+Finally there are flows for Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your receivers. 
 
-This solution makes it also very easy to have multiple Receivers and you can easily move the devices around between them. As long as one device reaches one receiver everything will work. If it reaches multiple receivers you can even reboot them without data loss.
+This solution makes it also very easy to have multiple receivers and you can easily move the devices around between them. As long as one device reaches one receiver everything will work. If it reaches multiple receivers you can even reboot them without data loss.
 
-To use the script with Node-RED just import the flows from `MiTemperature2 Node-Red Flows.txt`
-With that flow you can even start the script in ATC-Mode via Node-RED. If you are user `pi` and in your home directory, clone this Repo via `git clone https://github.com/JsBergbau/MiTemperature2`, make `LYWSD03MMC.py` and `./sendToNodeRed.sh` executable and you even have not to change the script execution part.
+There are two slightly different versions. `Node-RED flows Callback mode.json` sends directly via curl and HTTP the data to Node-RED. This version is only intended when you don't have a MQTT broker.
+
+`Node-RED flows MQTT mode.json` is the more efficient version because it is intended to be used with the integraded MQTT support and obviously a MQTT broker.
+
+To use MiTemperature2 script with Node-RED import the flows from one of these files.
+
+With that flow you can even start the script in ATC-Mode via Node-RED. If you are user `pi` and in your home directory, clone this Repo via `git clone https://github.com/JsBergbau/MiTemperature2`, make `LYWSD03MMC.py` executable (also `./sendToNodeRed.sh` when using callback version) and the preconfigured path to MiTemperature2 script doesn't have to be changed.
 
 The Node-RED flow is documented with comments for easy usage. If theres missing some information, just open an issue and I'll have a look.
 
-For easily switching between filtering of Node-Red and the Python-Script LYWSD03MMC there are two scripts included.
+For easily switching between filtering in Node-Red or directly in the MiTemperature2 script, there are two scripts included.
 ``` ./iniToJSON.py -h
 usage: iniToJSON.py [-h] --readfile filename [--writefile filename]
 
@@ -536,6 +613,8 @@ optional arguments:
 
 
 ## Callback to Home-Assistant MQTT integration
+Before using this callback script, please check if it is possible to do the same with integrated MQTT support.
+
 etpedro https://github.com/etpedro has added a sendToMQTT_HA callback script that sends the data to an MQTT server and leverages Home-Assistant MQTT Autodiscovery creating a device for each sensor under MQTT integration. Each device has 4 entities: temperature, humidity, battery percentage and battery voltage.
 
 Replace each variable according to your environment:
