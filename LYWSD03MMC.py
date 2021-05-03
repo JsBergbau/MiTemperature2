@@ -249,7 +249,7 @@ class MyDelegate(btle.DefaultDelegate):
 				if measurement.calibratedHumidity == 0:
 					measurement.calibratedHumidity = measurement.humidity
 				jsonString=buildJSONString(measurement)
-				myMQTTPublish(topic,jsonString)
+				myMQTTPublish(MQTTTopic,jsonString)
 				#MQTTClient.publish(MQTTTopic,jsonString,1)
 		
 
