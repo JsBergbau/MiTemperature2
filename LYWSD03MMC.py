@@ -3,7 +3,7 @@
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
 print("---------------------------------------------")
-print("MiTemperature2 / ATC Thermometer version 3.0")
+print("MiTemperature2 / ATC Thermometer version 3.1")
 print("---------------------------------------------")
 
 from bluepy import btle
