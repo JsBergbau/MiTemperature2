@@ -14,12 +14,12 @@ For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your 
 
 If you like installing/compiling Python3.7 please take a look at this tutorial https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d However it took about 5 hours to compile/run the regressiontests on a Raspberry PI3B. I use this compiled version directly without install. If you do, too, you have to change the first line in the script, pointing to your compiled Python version. For bluepy you can copy the bluepy-folder from home/pi/.local/lib/python3.7/site-packages/bluepy to <yourPath>Python-3.7.4/Lib and do a chmod +x bluepy-helper in <yourPath>Python-3.7.4/Lib/bluepy
 
-Prequisites: python3 bluez python3-pip bluepy
+Prequisites: python3 bluez python3-pip bluepy requests
 install via
 
 `sudo apt install python3 bluez python3-pip`
 
-`pip3 install bluepy`
+`pip3 install bluepy requests`
 
 If you use integrated MQTT client paho-mqtt is needed. Install via
 
@@ -53,7 +53,7 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--offset OFFSET] [--TwoPointCalibration]
                      [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
                      [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
-                     [--callback CALLBACK] [--name NAME] [--skipidentical N]
+                     [--callback CALLBACK] [--httpcallback URL] [--name NAME] [--skipidentical N]
                      [--influxdb N] [--atc] [--watchdogtimer X]
                      [--devicelistfile DEVICELISTFILE] [--onlydevicelist]
                      [--rssi]
@@ -96,6 +96,9 @@ Offset calibration mode:
 Callback related arguments:
   --callback CALLBACK, -call CALLBACK
                         Pass the path to a program/script that will be called
+                        on each new measurement
+  --httpcallback URL, -http URL
+                        Pass the URL to a program/script that will be called
                         on each new measurement
   --name NAME, -n NAME  Give this sensor a name reported to the callback
                         script
@@ -544,7 +547,7 @@ Calibrated humidity: 49
 
 ## Callback for processing the data
 
-Via the --call option a script can be passed to sent the data to.
+Via the --callback option a script can be passed to sent the data to.
 Example
 `./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --callback sendToFile.sh`
 If you don't give the sensor a name, the MAC-Address is used. The callback script must be within the same folder as this script.
@@ -561,6 +564,12 @@ exit 0
 Gives in data.txt `sensorname,temperature,humidity,voltage,humidityCalibrated,timestamp MySensor 20.61 54 2.944 49 1582120122`
 
 Whereas the timestamp is in the Unix timestamp format in UTC (seconds since 1.1.1970 00:00).
+
+Via the --httpcallback option a formatted URL can be passed to sent the data to.
+Example
+`./LYWSD03MMC.py -d AA:BB:CC:DD:EE:FF -2p -p2 75 -o2 -4 -p1 33 -o1 -6 --name MySensor --httpcallback "http://127.0.0.1:8080/myscript?name={sensorname}&temp={temperature}&hum={humidity}&bat={batteryLevel}"`
+
+This will call the script at the given URL and fill in the formatted values. Just like the built in MQTT support this is less expensive than executing a script via the --callback option every time a measurement is received. Supported values are: sensorname, temperature, humidity, voltage, humidityCalibrated, batteryLevel, rssi, timestamp.
 
 There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values are read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
 

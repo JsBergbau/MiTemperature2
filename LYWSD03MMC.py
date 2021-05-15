@@ -19,6 +19,7 @@ import traceback
 import math
 import logging
 import json
+import requests
 
 @dataclass
 class Measurement:
@@ -102,26 +103,48 @@ def thread_SendingData():
 					print("Measurements for " + mea.sensorname + " are identical; don't send data\n")
 					identicalCounters[mea.sensorname]+=1
 					continue
-			fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
-			if ' ' in mea.sensorname:
-				sensorname = '"' + mea.sensorname + '"'
-			else:
-				sensorname = mea.sensorname
-			params = sensorname + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
-			if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
-				fmt +=",humidityCalibrated"
-				params += " " + str(mea.calibratedHumidity)
-			if (args.battery):
-				fmt +=",batteryLevel"
-				params += " " + str(mea.battery)
-			if (args.rssi):
-				fmt +=",rssi"
-				params += " " + str(mea.rssi)
-			params += " " + str(mea.timestamp)
-			fmt +=",timestamp"
-			cmd = path + "/" + args.callback + " " + fmt + " " + params
-			print(cmd)
-			ret = os.system(cmd)
+
+			if args.callback:
+				fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
+				if ' ' in mea.sensorname:
+					sensorname = '"' + mea.sensorname + '"'
+				else:
+					sensorname = mea.sensorname
+				params = sensorname + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
+				if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
+					fmt +=",humidityCalibrated"
+					params += " " + str(mea.calibratedHumidity)
+				if (args.battery):
+					fmt +=",batteryLevel"
+					params += " " + str(mea.battery)
+				if (args.rssi):
+					fmt +=",rssi"
+					params += " " + str(mea.rssi)
+				params += " " + str(mea.timestamp)
+				fmt +=",timestamp"
+				cmd = path + "/" + args.callback + " " + fmt + " " + params
+				print(cmd)
+				ret = os.system(cmd)
+
+			if args.httpcallback:
+				url = args.httpcallback.format(
+					sensorname=mea.sensorname,
+					temperature=mea.temperature,
+					humidity=mea.humidity,
+					voltage=mea.voltage,
+					humidityCalibrated=mea.calibratedHumidity,
+					batteryLevel=mea.battery,
+					rssi=mea.rssi,
+					timestamp=mea.timestamp,
+				)
+				print(url)
+				ret = 0
+				try:
+					r = requests.get(url, verify=False, timeout=1)
+					r.raise_for_status()
+				except requests.exceptions.RequestException as e:
+					ret = 1
+
 			if (ret != 0):
 					measurements.appendleft(mea) #put the measurement back
 					print ("Data couln't be send to Callback, retrying...")
@@ -241,17 +264,16 @@ class MyDelegate(btle.DefaultDelegate):
 				print("Calibrated humidity: " + str(humidityCalibrated))
 				measurement.calibratedHumidity = humidityCalibrated
 
-			if(args.callback):
+			if args.callback or args.httpcallback:
 				measurements.append(measurement)
 
-					
 			if(args.mqttconfigfile):
 				if measurement.calibratedHumidity == 0:
 					measurement.calibratedHumidity = measurement.humidity
 				jsonString=buildJSONString(measurement)
 				myMQTTPublish(MQTTTopic,jsonString)
 				#MQTTClient.publish(MQTTTopic,jsonString,1)
-		
+
 
 		except Exception as e:
 			print("Fehler")
@@ -311,6 +333,7 @@ complexCalibrationGroup.add_argument("--offset2","-o2", help="Enter the offset f
 
 callbackgroup = parser.add_argument_group("Callback related arguments")
 callbackgroup.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
+callbackgroup.add_argument("--httpcallback","-http", help="Pass the URL to a program/script that will be called on each new measurement")
 callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported to the callback script")
 callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
@@ -395,7 +418,7 @@ if args.TwoPointCalibration:
 if not args.name:
 	args.name = args.device
 
-if args.callback:
+if args.callback or args.httpcallback:
 	dataThread = threading.Thread(target=thread_SendingData)
 	dataThread.start()
 
@@ -612,9 +635,10 @@ elif args.atc:
 					if measurement.calibratedHumidity == 0:
 						measurement.calibratedHumidity = measurement.humidity
 
-					if(args.callback):
+					if args.callback or args.httpcallback:
 						measurements.append(measurement)
-					if(args.mqttconfigfile):
+
+					if args.mqttconfigfile:
 						jsonString=buildJSONString(measurement)
 						myMQTTPublish(currentMQTTTopic,jsonString)
 						#MQTTClient.publish(currentMQTTTopic,jsonString,1)
