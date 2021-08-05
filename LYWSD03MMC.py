@@ -586,7 +586,7 @@ elif args.atc:
 					lastAdvNumber = advCounter[macStr]
 				else:
 					lastAdvNumber = None
-				if lastAdvNumber == None or lastAdvNumber != advNumber:
+				if lastAdvNumber != advNumber:
 					advCounter[macStr] = advNumber
 					print("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
 					#print("AdvNumber: ", advNumber)
