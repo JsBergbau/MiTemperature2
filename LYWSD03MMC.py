@@ -97,6 +97,7 @@ def thread_SendingData():
 
 	while True:
 		try:
+			ret = None
 			mea = measurements.popleft()
 			if mea.sensorname in previousMeasurements:
 				prev = previousMeasurements[mea.sensorname]
@@ -144,11 +145,11 @@ def thread_SendingData():
 					r = requests.get(url, verify=False, timeout=1)
 					r.raise_for_status()
 				except requests.exceptions.RequestException as e:
-					ret = 1
+					ret = str(e)
 
-			if (ret != 0):
+			if ret:
 					measurements.appendleft(mea) #put the measurement back
-					print ("Data couln't be send to Callback, retrying...")
+					print (f"Data couldn't be send to Callback ({ret}), retrying...")
 					time.sleep(5) #wait before trying again
 			else: #data was sent
 				previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
