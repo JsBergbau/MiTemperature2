@@ -478,36 +478,11 @@ if args.device:
 	while True:
 		try:
 			if not connected:
-				#Bluepy sometimes hangs and makes it even impossible to connect with gatttool as long it is running
-				#on every new connection a new bluepy-helper is called
-				#we now make sure that the old one is really terminated. Even if it hangs a simple kill signal was sufficient to terminate it
-				# if bluepypid is not None:
-					# os.system("kill " + bluepypid)
-					# print("Killed possibly remaining bluepy-helper")
-				# else:
-					# print("bluepy-helper couldn't be determined, killing not allowed")
-						
 				print("Trying to connect to " + adress)
 				p=connect()
-				# logging.debug("Own PID: "  + str(pid))
-				# pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
-				# logging.debug("PSTree: " + pstree)
-				# try:
-					# bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
-				# except IndexError: #Should not happen since we're now connected
-					# logging.debug("Couldn't find pid of bluepy-helper")				
 				connected=True
 				unconnectedTime=None
-				
-			# if args.battery:
-					# if(cnt % args.battery == 0):
-						# print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
-						# batt=p.readCharacteristic(0x001b)
-						# batt=int.from_bytes(batt,byteorder="little")
-						# print("Battery-Level: " + str(batt))
-						# globalBatteryLevel = batt
-				
-				
+
 			if p.waitForNotifications(2000):
 				# handleNotification() was called
 				
