@@ -2,10 +2,6 @@
 #!/home/openhabian/Python3/Python-3.7.4/python -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
-print("---------------------------------------------")
-print("MiTemperature2 / ATC Thermometer version 3.1")
-print("---------------------------------------------")
-
 from bluepy import btle
 import argparse
 import os
@@ -21,6 +17,10 @@ import math
 import logging
 import json
 import requests
+
+print("---------------------------------------------")
+print("MiTemperature2 / ATC Thermometer version 3.1")
+print("---------------------------------------------")
 
 @dataclass
 class Measurement:
