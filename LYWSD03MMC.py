@@ -1,20 +1,6 @@
 #!/usr/bin/python3 -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
-print("---------------------------------------------")
-print("MiTemperature2 / ATC Thermometer version 4.0")
-print("---------------------------------------------")
-
-readme="""
-
-Please read README.md in this folder. Latest version is available at https://github.com/JsBergbau/MiTemperature2#readme
-This file explains very detailed about the usage and covers everything you need to know as user.
-
-"""
-
-print(readme)
-
-
 from bluepy import btle
 import argparse
 import os
@@ -32,6 +18,18 @@ import json
 import requests
 import ssl
 
+
+print("---------------------------------------------")
+print("MiTemperature2 / ATC Thermometer version 4.0")
+print("---------------------------------------------")
+
+readme = """
+
+Please read README.md in this folder. Latest version is available at https://github.com/JsBergbau/MiTemperature2#readme
+This file explains very detailed about the usage and covers everything you need to know as user.
+
+"""
+print(readme)
 
 @dataclass
 class Measurement:
