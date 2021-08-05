@@ -78,22 +78,14 @@ def signal_handler(sig, frame):
 def watchDog_Thread():
 	global unconnectedTime
 	global connected
-	global pid
 	while True:
 		logging.debug("watchdog_Thread")
 		logging.debug("unconnectedTime : " + str(unconnectedTime))
 		logging.debug("connected : " + str(connected))
-		logging.debug("pid : " + str(pid))
+		logging.debug(f"pid : {os.getpid()}")
 		now = int(time.time())
 		if (unconnectedTime is not None) and ((now - unconnectedTime) > 60): #could also check connected is False, but this is more fault proof
-			pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
-			logging.debug("PSTree: " + pstree)
-			try:
-				bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
-			except IndexError: #Should not happen since we're now connected
-				logging.debug("Couldn't find pid of bluepy-helper")
-			os.system("kill " + bluepypid)
-			logging.debug("Killed bluepy with pid: " + str(bluepypid))
+			kill_bluepy_helper()
 			unconnectedTime = now #reset unconnectedTime to prevent multiple killings in a row
 		time.sleep(5)
 	
@@ -290,7 +282,21 @@ class MyDelegate(btle.DefaultDelegate):
 			print("Fehler")
 			print(e)
 			print(traceback.format_exc())
-		
+
+
+def kill_bluepy_helper():
+	pid = os.getpid()
+	# It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
+	# we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+	pstree = os.popen(f"pstree -p {pid}").read()
+	try:
+		bluepypid = re.findall(r'bluepy-helper\((.*)\)', pstree)[0]  # Store the bluepypid, to kill it later
+		os.system("kill " + bluepypid)
+		logging.debug("Killed bluepy with pid: " + str(bluepypid))
+	except IndexError:  # Should normally occur because we're disconnected
+		logging.debug("Couldn't find pid of bluepy-helper")
+
+
 # Initialisation  -------
 
 def connect():
@@ -462,8 +468,6 @@ if args.device:
 	#logging.basicConfig(level=logging.DEBUG)
 	logging.basicConfig(level=logging.ERROR)
 	logging.debug("Debug: Starting script...")
-	pid=os.getpid()	
-	bluepypid=None
 	unconnectedTime=None
 	connectionLostCounter=0
 
@@ -512,16 +516,7 @@ if args.device:
 					print(str(args.count) + " measurements collected. Exiting in a moment.")
 					p.disconnect()
 					time.sleep(5)
-					#It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
-					pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
-					bluepypid=0
-					try:
-						bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
-					except IndexError: #Should normally occur because we're disconnected
-						logging.debug("Couldn't find pid of bluepy-helper")
-					if bluepypid != 0:
-						os.system("kill " + bluepypid)
-						logging.debug("Killed bluepy with pid: " + str(bluepypid))
+					kill_bluepy_helper()
 					sys.exit(0)
 				print("")
 				continue
