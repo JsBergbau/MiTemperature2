@@ -307,7 +307,7 @@ def buildJSONString(measurement):
 	})
 
 def MQTTOnConnect(client, userdata, flags, rc):
-    print("MQTT connected with result code "+str(rc))
+	print("MQTT connected with result code "+str(rc))
 
 def MQTTOnPublish(client,userdata,mid):
 	print("MQTT published, Client:",client," Userdata:",userdata," mid:", mid)
