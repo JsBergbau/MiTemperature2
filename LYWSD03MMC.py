@@ -362,7 +362,7 @@ if args.devicelistfile or args.mqttconfigfile:
 if args.mqttconfigfile:
 	try:
 		import paho.mqtt.client as mqtt
-	except:
+	except ImportError:
 		print("Please install MQTT-Library via 'pip/pip3 install paho-mqtt'")
 		exit(1)
 	if not os.path.exists(args.mqttconfigfile):
@@ -561,7 +561,7 @@ elif args.atc:
 	
 	try:
 		sock = bluez.hci_open_dev(dev_id)
-	except:
+	except Exception:
 		print("Cannot open bluetooth device %i" % dev_id)
 		raise
 
@@ -627,7 +627,7 @@ elif args.atc:
 					if mac in sensors:
 						try:
 							measurement.sensorname = sensors[mac]["sensorname"]
-						except:
+						except KeyError:
 							measurement.sensorname = mac
 						if "offset1" in sensors[mac] and "offset2" in sensors[mac] and "calpoint1" in sensors[mac] and "calpoint2" in sensors[mac]:
 							measurement.humidity = calibrateHumidity2Points(humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
