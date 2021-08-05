@@ -113,7 +113,7 @@ def toggle_device(dev_id, enable):
     hci_sock = socket.socket(socket.AF_BLUETOOTH,
                              socket.SOCK_RAW,
                              socket.BTPROTO_HCI)
-    print("Power %s bluetooth device %d" % ('ON' if enable else 'OFF', dev_id))
+    print(f"Power {'ON' if enable else 'OFF'} bluetooth device {dev_id}")
     # di = struct.pack("HbBIBBIIIHHHH10I", dev_id, *((0,) * 22))
     # fcntl.ioctl(hci_sock.fileno(), bluez.HCIGETDEVINFO, di)
     req_str = struct.pack("H", dev_id)
@@ -124,8 +124,7 @@ def toggle_device(dev_id, enable):
                     request[0])
     except IOError as e:
         if e.errno == EALREADY:
-            print("Bluetooth device %d is already %s" % (
-                  dev_id, 'enabled' if enable else 'disabled'))
+            print(f"Bluetooth device {dev_id:d} is already {'enabled' if enable else 'disabled'}")
         else:
             raise
     finally:
@@ -163,10 +162,10 @@ def set_scan(dev_id, scan_type):
     elif scan_type == "piscan":
         dev_opt = SCAN_PAGE | SCAN_INQUIRY
     else:
-        raise ValueError("Unknown scan type %r" % scan_type)
+        raise ValueError(f"Unknown scan type {scan_type!r}")
 
     req_str = struct.pack("HI", dev_id, dev_opt)
-    print("Set scan type %r to bluetooth device %d" % (scan_type, dev_id))
+    print(f"Set scan type {scan_type!r} to bluetooth device {dev_id:d}")
     try:
         fcntl.ioctl(hci_sock.fileno(), bluez.HCISETSCAN, req_str)
     finally:
@@ -265,9 +264,9 @@ def start_le_advertising(sock, min_interval=1000, max_interval=1000,
     if data_length > 31:
         raise ValueError("data is too long (%d but max is 31 bytes)",
                          data_length)
-    cmd_pkt = struct.pack("<B%dB" % data_length, data_length, *data)
+    cmd_pkt = struct.pack(f"<B{data_length}B", data_length, *data)
     bluez.hci_send_cmd(sock, OGF_LE_CTL, OCF_LE_SET_ADVERTISING_DATA, cmd_pkt)
-    print("Advertising started data_length=%d data=%r" % (data_length, data))
+    print(f"Advertising started data_length={data_length:d} data={data!r}")
 
 
 def stop_le_advertising(sock):
@@ -348,8 +347,7 @@ def parse_le_advertising_events(sock, mac_addr=None, packet_length=None,
             if packet_length and plen != packet_length:
                 # ignore this packet
                 if debug:
-                    print("packet with non-matching length: mac=%s adv_type=%02x plen=%s" %
-                          (mac_addr_str, adv_type, plen))
+                    print(f"packet with non-matching length: mac={mac_addr_str} adv_type={adv_type:02x} plen={plen}")
                     print(raw_packet_to_str(pkt))
                 continue
 
@@ -359,19 +357,23 @@ def parse_le_advertising_events(sock, mac_addr=None, packet_length=None,
 
             if mac_addr and mac_addr_str not in mac_addr:
                 if debug:
-                    print("packet with non-matching mac %s adv_type=%02x data=%s RSSI=%s" %
-                          (mac_addr_str, adv_type, raw_packet_to_str(data), rssi))
+                    print(
+                        f"packet with non-matching mac {mac_addr_str} adv_type={adv_type:02x} "
+                        f"data={raw_packet_to_str(data)} RSSI={rssi}"
+                    )
                 continue
 
             if debug:
-                print("LE advertisement: mac=%s adv_type=%02x data=%s RSSI=%d" %
-                      (mac_addr_str, adv_type, raw_packet_to_str(data), rssi))
+                print(
+                    f"LE advertisement: mac={mac_addr_str} adv_type={adv_type:02x} "
+                    f"data={raw_packet_to_str(data)} RSSI={rssi:d}"
+                )
 
             if handler is not None:
                 try:
                     handler(mac_addr_str, adv_type, data, rssi)
                 except Exception as e:
-                    print('Exception when calling handler with a BLE advertising event: %r' % (e,))
+                    print(f'Exception when calling handler with a BLE advertising event: {e!r}')
                     import traceback
                     traceback.print_exc()
 

@@ -65,7 +65,7 @@ def myMQTTPublish(topic,jsonMessage):
 		messageDict = json.loads(jsonMessage)
 		for subtopic in subtopics:
 			print("Topic:",subtopic)
-			MQTTClient.publish(topic + "/" + subtopic,messageDict[subtopic],0)
+			MQTTClient.publish(f"{topic}/{subtopic}", messageDict[subtopic], 0)
 	if not mqttJSONDisabled:
 		MQTTClient.publish(topic,jsonMessage,1)
 
@@ -80,8 +80,8 @@ def watchDog_Thread():
 	global connected
 	while True:
 		logging.debug("watchdog_Thread")
-		logging.debug("unconnectedTime : " + str(unconnectedTime))
-		logging.debug("connected : " + str(connected))
+		logging.debug(f"unconnectedTime : {unconnectedTime}")
+		logging.debug(f"connected : {connected}")
 		logging.debug(f"pid : {os.getpid()}")
 		now = int(time.time())
 		if (unconnectedTime is not None) and ((now - unconnectedTime) > 60): #could also check connected is False, but this is more fault proof
@@ -103,7 +103,7 @@ def thread_SendingData():
 			if mea.sensorname in previousMeasurements:
 				prev = previousMeasurements[mea.sensorname]
 				if (mea == prev and identicalCounters[mea.sensorname] < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 packets per minute, 50 packets --> writing at least every 5 minutes
-					print("Measurements for " + mea.sensorname + " are identical; don't send data\n")
+					print(f"Measurements for {mea.sensorname} are identical; don't send data\n")
 					identicalCounters[mea.sensorname]+=1
 					continue
 
@@ -172,7 +172,7 @@ def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if 
 		time.sleep(1)
 		now = time.time()
 		if now - lastBLEPaketReceived > args.watchdogtimer:
-			print("Watchdog: Did not receive any BLE Paket within", int(now - lastBLEPaketReceived), "s. Restarting BLE scan. Count:", BLERestartCounter)
+			print(f"Watchdog: Did not receive any BLE Paket within {int(now - lastBLEPaketReceived)}s. Restarting BLE scan. Count: {BLERestartCounter}")
 			disable_le_scan(sock)
 			enable_le_scan(sock, filter_duplicates=False)
 			BLERestartCounter += 1
@@ -240,31 +240,29 @@ class MyDelegate(btle.DefaultDelegate):
 					temp /=10.
 					#print("Debounced temp: " + str(temp))
 				else:
-					temp=round(temp,1)
-			humidity=int.from_bytes(data[2:3],byteorder='little')
-			print("Temperature: " + str(temp))
-			print("Humidity: " + str(humidity))
-			voltage=int.from_bytes(data[3:5],byteorder='little') / 1000.
-			print("Battery voltage:",voltage,"V")
+					temp = round(temp, 1)
+			humidity = int.from_bytes(data[2:3], byteorder='little')
+			voltage = int.from_bytes(data[3:5], byteorder='little') / 1000.0
+			batteryLevel = min(int(round((voltage - 2.1), 2) * 100), 100)  # 3.1 or above --> 100% 2.1 --> 0 %
+
+			print(f"Temperature: {temp}")
+			print(f"Humidity: {humidity}")
+			print(f"Battery voltage: {voltage} V")
+			print(f"Battery level: {batteryLevel}")
 			measurement.temperature = temp
 			measurement.humidity = humidity
 			measurement.voltage = voltage
 			measurement.sensorname = args.name
-			#if args.battery:
-				#measurement.battery = globalBatteryLevel
-			batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
 			measurement.battery = batteryLevel
-			print("Battery level:",batteryLevel)
-				
 
 			if args.offset:
 				humidityCalibrated = humidity + args.offset
-				print("Calibrated humidity: " + str(humidityCalibrated))
+				print(f"Calibrated humidity: {humidityCalibrated}")
 				measurement.calibratedHumidity = humidityCalibrated
 
 			if args.TwoPointCalibration:
 				humidityCalibrated= calibrateHumidity2Points(humidity,args.offset1,args.offset2, args.calpoint1, args.calpoint2)
-				print("Calibrated humidity: " + str(humidityCalibrated))
+				print(f"Calibrated humidity: {humidityCalibrated}")
 				measurement.calibratedHumidity = humidityCalibrated
 
 			if args.callback or args.httpcallback:
@@ -291,8 +289,8 @@ def kill_bluepy_helper():
 	pstree = os.popen(f"pstree -p {pid}").read()
 	try:
 		bluepypid = re.findall(r'bluepy-helper\((.*)\)', pstree)[0]  # Store the bluepypid, to kill it later
-		os.system("kill " + bluepypid)
-		logging.debug("Killed bluepy with pid: " + str(bluepypid))
+		os.system(f"kill {bluepypid}")
+		logging.debug(f"Killed bluepy with pid: {bluepypid}")
 	except IndexError:  # Should normally occur because we're disconnected
 		logging.debug("Couldn't find pid of bluepy-helper")
 
@@ -322,13 +320,13 @@ def buildJSONString(measurement):
 	})
 
 def MQTTOnConnect(client, userdata, flags, rc):
-	print("MQTT connected with result code "+str(rc))
+	print(f"MQTT connected with result code {rc}")
 
 def MQTTOnPublish(client,userdata,mid):
-	print("MQTT published, Client:",client," Userdata:",userdata," mid:", mid)
+	print(f"MQTT published, Client: {client} Userdata: {userdata} mid: {mid}")
 
-def MQTTOnDisconnect(client, userdata,rc):
-	print("MQTT disconnected, Client:", client, "Userdata:", userdata, "RC:", rc)	
+def MQTTOnDisconnect(client, userdata, rc):
+	print(f"MQTT disconnected, Client: {client} Userdata: {userdata} RC: {rc}")
 
 # Main loop --------
 parser=argparse.ArgumentParser(allow_abbrev=False,epilog=readme)
@@ -381,7 +379,7 @@ if args.mqttconfigfile:
 		print("Please install MQTT-Library via 'pip/pip3 install paho-mqtt'")
 		exit(1)
 	if not os.path.exists(args.mqttconfigfile):
-		print ("Error MQTT config file '",args.mqttconfigfile,"' not found")
+		print(f"Error MQTT config file '{args.mqttconfigfile}' not found")
 		sys.exit(1)
 	mqttConfig = configparser.ConfigParser()
 	# print(mqttConfig.sections())
@@ -422,8 +420,8 @@ if args.mqttconfigfile:
 	client.loop_start()
 	client.username_pw_set(username,password)
 	if len(lwt) > 0:
-		print("Using lastwill with topic:",lwt,"and message:",lastwill)
-		client.will_set(lwt,lastwill,qos=1)
+		print(f"Using lastwill with topic: {lwt} and message: {lastwill}")
+		client.will_set(lwt, lastwill, qos=1)
 	# MQTTS parameters
 	if tls:
 		client.tls_set(cacerts, certificate, certificate_key, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS, ciphers=None)
@@ -431,7 +429,7 @@ if args.mqttconfigfile:
 	
 	client.connect_async(broker,port)
 	MQTTClient=client
-	
+
 
 if args.device:
 	if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
@@ -478,7 +476,7 @@ if args.device:
 	while True:
 		try:
 			if not connected:
-				print("Trying to connect to " + adress)
+				print(f"Trying to connect to {adress}")
 				p=connect()
 				connected=True
 				unconnectedTime=None
@@ -488,7 +486,7 @@ if args.device:
 				
 				cnt += 1
 				if args.count is not None and cnt >= args.count:
-					print(str(args.count) + " measurements collected. Exiting in a moment.")
+					print(f"{args.count} measurements collected. Exiting in a moment.")
 					p.disconnect()
 					time.sleep(5)
 					kill_bluepy_helper()
@@ -535,7 +533,7 @@ elif args.atc:
 	if args.devicelistfile:
 		#import configparser
 		if not os.path.exists(args.devicelistfile):
-			print ("Error specified device list file '",args.devicelistfile,"' not found")
+			print(f"Error specified device list file '{args.devicelistfile}' not found")
 			sys.exit(1)
 		sensors = configparser.ConfigParser()
 		sensors.read(args.devicelistfile)
@@ -564,7 +562,7 @@ elif args.atc:
 	try:
 		sock = bluez.hci_open_dev(dev_id)
 	except:
-		print("Cannot open bluetooth device %i" % dev_id)
+		print(f"Cannot open bluetooth device {dev_id}")
 		raise
 
 	enable_le_scan(sock, filter_duplicates=False)
@@ -606,12 +604,13 @@ elif args.atc:
 					lastAdvNumber = advCounter[macStr]
 				else:
 					lastAdvNumber = None
+
 				if lastAdvNumber == None or lastAdvNumber != advNumber:
 
 					if len(atcData_str) == 26: #ATC1441 Format
 						#print("atc14441") #debug
 						advCounter[macStr] = advNumber
-						print("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+						print(f"BLE packet: {mac} {adv_type:02x} {data_str} {rssi:d}")
 						#print("AdvNumber: ", advNumber)
 						#temp = data_str[22:26].encode('utf-8')
 						#temperature = int.from_bytes(bytearray.fromhex(data_str[22:26]),byteorder='big') / 10.
@@ -630,7 +629,7 @@ elif args.atc:
 
 					elif len(atcData_str) == 30: #custom format
 						#print("custom:", atcData_str)
-						print("BLE packet: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+						print(f"BLE packet: {mac} {adv_type:02x} {data_str} {rssi:d}")
 						temperature = int.from_bytes(bytearray.fromhex(atcData_str[12:16]),byteorder='little',signed=True) / 100.
 						humidity = int.from_bytes(bytearray.fromhex(atcData_str[16:20]),byteorder='little',signed=False) / 100.
 						batteryVoltage = int.from_bytes(bytearray.fromhex(atcData_str[20:24]),byteorder='little',signed=False) / 1000.
@@ -647,7 +646,7 @@ elif args.atc:
 							lastData = None
 
 						if lastData == None or lastData != atcData_str:
-							print("Encrypted BLE packet: %s %02x %s %d, length: %d" % (mac, adv_type, data_str, rssi, len(atcData_str)/2))
+							print(f"Encrypted BLE packet: {mac} {adv_type:02x} {data_str} {rssi:d}, length: {len(atcData_str) / 2:d}")
 							if mac in sensors and "key" in sensors[mac]:
 								bindkey = bytes.fromhex(sensors[mac]["key"])
 								macReversed=""
@@ -664,7 +663,7 @@ elif args.atc:
 								#temperature, humidity, batteryPercent = cryptoFunctions.decrypt_aes_ccm(bindkey,macReversed,bytes.fromhex(lengthHex + "161a18" + atcData_str))
 								temperature, humidity, batteryPercent = ret
 							else:
-								print("Warning: No key provided for sensor:", mac,"\n")
+								print(f"Warning: No key provided for sensor:{mac}\n")
 								return
 					else: #no fitting paket
 						return
@@ -687,12 +686,12 @@ elif args.atc:
 				measurement.voltage = batteryVoltage if batteryVoltage != None else 0
 				measurement.rssi = rssi
 
-				print("Temperature: ", temperature)
-				print("Humidity: ", humidity)
+				print(f"Temperature: {temperature}")
+				print(f"Humidity: {humidity}")
 				if batteryVoltage != None:
-					print ("Battery voltage:", batteryVoltage,"V")
-				print ("RSSI:", rssi, "dBm")
-				print ("Battery:", batteryPercent,"%")
+					print (f"Battery voltage: {batteryVoltage}V")
+				print (f"RSSI: {rssi}dBm")
+				print (f"Battery: {batteryPercent}%")
 				
 				currentMQTTTopic = MQTTTopic
 				if mac in sensors:
@@ -702,10 +701,10 @@ elif args.atc:
 						measurement.sensorname = mac
 					if "offset1" in sensors[mac] and "offset2" in sensors[mac] and "calpoint1" in sensors[mac] and "calpoint2" in sensors[mac]:
 						measurement.humidity = calibrateHumidity2Points(humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
-						print ("Humidity calibrated (2 points calibration): ", measurement.humidity)
+						print (f"Humidity calibrated (2 points calibration): {measurement.humidity}")
 					elif "humidityOffset" in sensors[mac]:
 						measurement.humidity = humidity + int(sensors[mac]["humidityOffset"])
-						print ("Humidity calibrated (offset calibration): ", measurement.humidity)
+						print (f"Humidity calibrated (offset calibration): {measurement.humidity}")
 					if "topic" in sensors[mac]:
 						currentMQTTTopic=sensors[mac]["topic"]
 				else:
