@@ -601,12 +601,9 @@ elif args.atc:
 				else:
 					advNumber = atcData_str[-2:] #last data in paket is adv number
 
-				if macStr in advCounter:
-					lastAdvNumber = advCounter[macStr]
-				else:
-					lastAdvNumber = None
+				lastAdvNumber = advCounter.get(macStr)
 
-				if lastAdvNumber == None or lastAdvNumber != advNumber:
+				if lastAdvNumber != advNumber:
 
 					if len(atcData_str) == 26: #ATC1441 Format
 						#print("atc14441") #debug
