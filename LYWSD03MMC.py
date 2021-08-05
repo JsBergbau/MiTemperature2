@@ -9,6 +9,7 @@ print("---------------------------------------------")
 from bluepy import btle
 import argparse
 import os
+import sys
 import re
 from dataclasses import dataclass
 from collections import deque
@@ -63,7 +64,7 @@ def myMQTTPublish(topic,jsonMessage):
 def signal_handler(sig, frame):
 	if args.atc:
 		disable_le_scan(sock)	
-	os._exit(0)
+	sys.exit(0)
 		
 def watchDog_Thread():
 	global unconnectedTime
@@ -365,7 +366,7 @@ if args.mqttconfigfile:
 		exit(1)
 	if not os.path.exists(args.mqttconfigfile):
 		print ("Error MQTT config file '",args.mqttconfigfile,"' not found")
-		os._exit(1)
+		sys.exit(1)
 	mqttConfig = configparser.ConfigParser()
 	# print(mqttConfig.sections())
 	mqttConfig.read(args.mqttconfigfile)
@@ -409,18 +410,18 @@ if args.device:
 		adress=args.device
 	else:
 		print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
-		os._exit(1)
+		sys.exit(1)
 elif not args.atc:
 	parser.print_help()
-	os._exit(1)
+	sys.exit(1)
 
 if args.TwoPointCalibration:
 	if(not(args.calpoint1 and args.offset1 and args.calpoint2 and args.offset2)):
 		print("In 2 Point calibration you have to enter 4 points")
-		os._exit(1)
+		sys.exit(1)
 	elif(args.offset):
 		print("Offset calibration and 2 Point calibration can't be used together")
-		os._exit(1)
+		sys.exit(1)
 if not args.name:
 	args.name = args.device
 
@@ -499,7 +500,7 @@ if args.device:
 					if bluepypid != 0:
 						os.system("kill " + bluepypid)
 						logging.debug("Killed bluepy with pid: " + str(bluepypid))
-					os._exit(0)
+					sys.exit(0)
 				print("")
 				continue
 		except Exception as e:
@@ -510,7 +511,7 @@ if args.device:
 				connected=False
 			if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
 				print("Maximum numbers of unsuccessful connections reaches, exiting")
-				os._exit(0)
+				sys.exit(0)
 			time.sleep(1)
 			logging.debug(e)
 			logging.debug(traceback.format_exc())		
@@ -541,7 +542,7 @@ elif args.atc:
 		#import configparser
 		if not os.path.exists(args.devicelistfile):
 			print ("Error specified device list file '",args.devicelistfile,"' not found")
-			os._exit(1)
+			sys.exit(1)
 		sensors = configparser.ConfigParser()
 		sensors.read(args.devicelistfile)
 		#Convert macs in devicelist file to Uppercase
@@ -552,7 +553,7 @@ elif args.atc:
 
 	if args.onlydevicelist and not args.devicelistfile:
 		print("Error: --onlydevicelist requires --devicelistfile <devicelistfile>")
-		os._exit(1)
+		sys.exit(1)
 
 	dev_id = args.interface  # the bluetooth device is hci0
 	toggle_device(dev_id, True)
