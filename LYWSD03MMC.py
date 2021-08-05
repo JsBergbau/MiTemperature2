@@ -292,11 +292,17 @@ def connect():
 	return p
 
 def buildJSONString(measurement):
-	jsonstr = '{"temperature": ' + str(measurement.temperature) + ', "humidity": ' + str(measurement.humidity) + ', "voltage": ' + str(measurement.voltage) \
-		+ ', "calibratedHumidity": ' + str(measurement.calibratedHumidity) + ', "battery": ' + str(measurement.battery) \
-		+ ', "timestamp": '+ str(measurement.timestamp) +', "sensor": "' + measurement.sensorname + '", "rssi": ' + str(measurement.rssi) \
-		+ ', "receiver": "' + receiver  + '"}'
-	return jsonstr
+	return json.dumps({
+		"temperature": str(measurement.temperature),
+		"humidity": str(measurement.humidity),
+		"voltage": str(measurement.voltage),
+		"calibratedHumidity": str(measurement.calibratedHumidity),
+		"battery": str(measurement.battery),
+		"timestamp": str(measurement.timestamp),
+		"sensor": str(measurement.sensorname),
+		"rssi": str(measurement.rssi),
+		"receiver": receiver,
+	})
 
 def MQTTOnConnect(client, userdata, flags, rc):
     print("MQTT connected with result code "+str(rc))
