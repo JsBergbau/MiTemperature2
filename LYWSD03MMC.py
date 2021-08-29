@@ -20,6 +20,7 @@ import math
 import logging
 import json
 import requests
+import ssl
 
 @dataclass
 class Measurement:
@@ -365,6 +366,14 @@ if args.mqttconfigfile:
 	mqttConfig.read(args.mqttconfigfile)
 	broker = mqttConfig["MQTT"]["broker"]
 	port = int(mqttConfig["MQTT"]["port"])
+
+	# MQTTS parameters
+	tls = int(mqttConfig["MQTT"]["tls"])
+	cacerts = mqttConfig["MQTT"]["cacerts"] if mqttConfig["MQTT"]["cacerts"] else None
+	certificate = mqttConfig["MQTT"]["certificate"] if mqttConfig["MQTT"]["certificate"] else None
+	certificate_key = mqttConfig["MQTT"]["certificate_key"] if mqttConfig["MQTT"]["certificate_key"] else None
+	insecure = int(mqttConfig["MQTT"]["insecure"])
+
 	username = mqttConfig["MQTT"]["username"]
 	password = mqttConfig["MQTT"]["password"]
 	MQTTTopic = mqttConfig["MQTT"]["topic"]
@@ -393,11 +402,15 @@ if args.mqttconfigfile:
 	if len(lwt) > 0:
 		print("Using lastwill with topic:",lwt,"and message:",lastwill)
 		client.will_set(lwt,lastwill,qos=1)
+
+	# MQTTS parameters
+	if tls:
+		client.tls_set(cacerts, certificate, certificate_key, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS, ciphers=None)
+		client.tls_insecure_set(insecure)
 	
 	client.connect_async(broker,port)
 	MQTTClient=client
 	
-
 if args.device:
 	if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
 		adress=args.device
