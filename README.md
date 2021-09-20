@@ -31,7 +31,7 @@ Instead of `pip3` it may be just `pip`, depeding of your installation.
 
 Additional requirements if you want to use the atc version. If you don't use ATC version, please ignore this section.
 ```
-apt install bluetooth libbluetooth-dev
+sudo apt install bluetooth libbluetooth-dev
 pip3 install pybluez
 ```
 
