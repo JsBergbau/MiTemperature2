@@ -35,6 +35,8 @@ sudo apt install bluetooth libbluetooth-dev
 pip3 install pybluez
 ```
 
+Additional requirements for encrypted ATC-Mode: `pip install pycryptodome`
+
 Bluetooth LE Scanning needs root. To run the script for AT with normal user rights, please execute
 ```
 sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)
