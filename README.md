@@ -144,6 +144,8 @@ I've also noticed a higher range. In addition you can have multiple receivers, s
 
 For longer batterylife and higher stability ATC mode is recommended. In the flasher Webpage selecting only `Atc1441` as Advertising type is recommended. You can than increase the Advertising interval to save power for sensors with good reception. For sensors with weaker reception I would keep the default of 2500 ms. You could even increase it for sensors with very bad reception. 
 
+With version 4 of MiTemperature2/LYWSD03MMC.py also custom format advertisment type is supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
+
 In ATC mode the script listens for BLE advertisments and filters for ATC flashed LYWSD03MMC sensors. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
 
 ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available. This is no real disadavantage because accuracy is impaired because of a lacking capciator, see https://github.com/pvvx/ATC_MiThermometer/issues/11#issuecomment-766776468
@@ -161,7 +163,7 @@ An example is given in the sensors.ini file in this repository. It is quite self
 ```ini
 [info]
 info1=now all available options are listet. If offset1, offset2, calpoint1 and calpoint2 are given 2Point calibration is used instead of humidityOffset.
-info1= Note options are case sensitive
+info2= Note options are case sensitive
 ;info4=Use semicolon to comment out lines
 sensorname=Specify an easy readable name
 humidityOffset=-5
@@ -171,6 +173,9 @@ calpoint1 = 33
 calpoint2 = 75
 topic=This sensor data will be published with this name when using integrated MQTT
 ;If no topic is given, then default topic from MQTT config is used
+decryption = For encrypted sensor give the key preceded by k. It is advised to use an individual key for every sensor. Please also set a PIN to prevent adversary from connecting and reading key.
+;example for key
+;decryption = k9088F9B4F7EC3BB52378F8F31CB74073
 
 ;[A4:C1:38:DD:EE:FF]
 ; sensorname=Bathroom
@@ -188,6 +193,7 @@ offset2 = 2
 calpoint1 = 33
 calpoint2 = 75
 topic=basement/Living_Room
+decryption = k9088F9B4F7EC3BB52378F8F31CB74073
 ```
 
 `--onlydevicelist` Use this option to read only the data from sensors which are in your device list. This is quite useful if you have some spare sensors and you don't want your database get flooded with this data.
@@ -202,6 +208,19 @@ When you have configured an advertisment interval of 10 seconds: Ideally store o
 With original firmware where you connect to each sensor every 6 seconds an measurement is sent and storing every 10 seconds a measurement is a good value.
 
 ATC mode uses passive scanning for saving battery life of the sensors. Read more about this here https://github.com/JsBergbau/MiTemperature2/issues/41#issuecomment-735361200
+
+#### Encrypted ATC Mode
+
+Beginning with v4 of the script encrypted ATC mode is supported. You have to use a devicelist file, option `--devicelistfile` and add an entry for every sensor and its key. 
+
+To use this mode, copy or set a new 32 char hexadecimal key (see example ini, note the preceding `k` is only in ini file) by pressing "Show all mi keys" in Telik Flasher and in case of setting a new one pressing button "Set new Token & Bind keys". 
+At "Advertising type" uncheck "AdFlags" and check "Encrypted beacon" for shortest encrypted paket length. When "Atc1441" is chosen, paket length is really minimal, however temperature is only reported in 0.5 °C steps. You can also choose "Custom" format, this will report 2 decimal places for temperature and humidity. When using `--round` option, temperature and humidity are rounded to one decimal place.
+
+**Remember to set PinCode**. Without Pincode an adversary can connect and copy your encryption key. He can even lock you out by setting a pincode. If you like to disable Pincode again, enter `000000`, so 6 zeros in a row. 
+
+**No voltage output, only battery level**: Encrypted ATC mode does not report any battery voltage, only battery level is transmitted. Thus voltage is always `0` in encrypted ATC mode. When not using integrated MQTT, use `--battery` to report battery level via callback. 
+
+
 
 ## Built in MQTT support
 
@@ -225,7 +244,7 @@ Data is transmitted that way (but can be changed to subtopic mode, see below):
   "receiver": "raspberrypi"
 }
 ```
-or when you don't use a device list file then in sensorname there is the mac address of the sensor.
+or when you don't use a device list file then in sensorname there is the mac address of the sensor. For encrypted mode voltage is always 0, see above.
 
 If you don't have provided any calibration data calibratedHumidity is the humidity value. So you can always use calibratedHumidity as the humidity value.
 
@@ -237,6 +256,7 @@ In the Node-RED sample flow (see below) the settings are setup this way.
 The example mqtt.conf file looks like
 
 ```ini
+;For configuration options please see DEFAULT section below and https://github.com/JsBergbau/MiTemperature2/blob/master/README.md
 [MQTT]
 broker=127.0.0.1
 port=1883
@@ -246,6 +266,16 @@ topic=ATCThermometer
 receivername=
 ;subtopics=temperature,humidity
 
+;Enable TLS / MQTTS
+tls=0
+;CA file
+cacerts=isrgrootx1.pem
+;Certificate file
+certificate=
+;Certificate key file
+certificate_key=
+;Enable TLS insecure mode
+insecure=0
 
 [DEFAULT]
 ;Do not change here, leave it as it is
@@ -267,7 +297,8 @@ receivername=
 subtopics=
 ```
 
-broker, username, password and port are self-explaining. Also lastwill and lastwill topic (lwt) can be easily understood.
+broker, username, password and port are self-explaining. In addition TLS / MQTTS section should be easy to understand. Also lastwill and lastwill topic (lwt) can be easily understood.
+
 Topic is the default topic under which data of all thermometers is published. You can override this per sensor, see above in the sensors.ini configuration. This default topic is the same as in the Node-RED flow example to receive all thermometers at one place.
 
 If you need seperate readings like `sensors/basement/kitchen/temperature` and `sensors/basement/kitchen/humidity` you can use the `subtopics` option. So if you need voltage, temperature and humidity, subtopics option would look like `subtopics=temperature,voltage,humidity` and it would be published under 
@@ -367,16 +398,23 @@ Battery level: 84
 ```
 ../LYWSD03MMC.py --atc --mqttconfigfile mqtt.conf --devicelistfile MeineSensoren.ini
 ---------------------------------------------
-MiTemperature2 / ATC Thermometer version 3.0
+MiTemperature2 / ATC Thermometer version 4.0
 ---------------------------------------------
+
+
+Please read README.md in this folder. Latest version is available at https://github.com/JsBergbau/MiTemperature2#readme
+This file explains very detailed about the usage and covers everything you need to know as user.
+
+
 Script started in ATC Mode
 ----------------------------
 In this mode all devices within reach are read out, unless a devicelistfile and --onlydevicelist is specified.
 Also --name Argument is ignored, if you require names, please use --devicelistfile.
-In this mode rounding and debouncing are not available, since ATC firmware sends out only one decimal place.
+In this mode debouncing is not available. Rounding option will round humidity and temperature to one decimal place.
 ATC mode usually requires root rights. If you want to use it with normal user rights,
 please execute "sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)"
 You have to redo this step if you upgrade your python version.
+
 ----------------------------
 Power ON bluetooth device 0
 Bluetooth device 0 is already enabled
@@ -437,6 +475,21 @@ RSSI: -50 dBm
 Battery: 21 %
 Humidity calibrated (2 points calibration):  53
 
+Encrypted BLE packet: A4:C1:38:AA:BB:C1 00 0f0201060b161a1814c4f07de5c71fb9 -55, length: 8
+Temperature:  22.0
+Humidity:  47.5
+RSSI: -55 dBm
+Battery: 89 %
+Humidity calibrated (2 points calibration):  47
+
+Encrypted BLE packet: A4:C1:38:AA:BB:C2 00 0f0e161a181bddcb979c20f6b76c725a -58, length: 11
+Temperature:  21.86
+Humidity:  49.06
+RSSI: -58 dBm
+Battery: 86 %
+Humidity calibrated (2 points calibration):  49
+
+
 ```
 
 ### More info
@@ -466,7 +519,17 @@ Lower power mode: To safe power the connection interval is reduced. For more det
 
 There can be done a lot more with that sensor. It stores highest and lowest values at hour level, has an integrated realtime clock and a few things more like changing the values for the comfort icon on the display. Credits go to jaggil who investigated on this and documented it well. You find the results here https://github.com/JsBergbau/MiTemperature2/issues/1 Just search for jaggil.
 
-### Troubleshooting (for connection mode which is not recommended anymore)
+### Troubleshooting 
+
+#### Connecting with Telink Flasher
+
+With pvvx Telink Flasher https://pvvx.github.io/ATC_MiThermometer/TelinkMiFlasher.html you can flash the latest custom firmware.
+If you have problems connecting to the device or connection interrupts, please read this https://github.com/pvvx/ATC_MiThermometer/issues/11#issuecomment-766776468
+Xiaomi saved approximately one cent per device by waiving a capacitor. 
+When applying settings to device and settings page is not showing up shortly after, then settings were lost and you have to begin again. 
+So if this happens, try a new battery. But even new, cheap batteries, sometimes show this behaviour. So take another one and when settings are made you can use that battery again. It will still last a long time. 
+
+#### For connection mode which is not recommended anymore
 
 Sometimes script fails to connect and tries to connect forever.
 Just exec `killall bluepy-helper` You can even do this while script is running. It will disconnect, but recovery automatically.
@@ -582,9 +645,9 @@ All data received from the sensor is stored in a list and transmitted sequential
 [Read instruction about integartion with Prometheus Push Gateway](./prometheus/README.md)
 
 ## Node-RED flows
-Finally there are flows for Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your receivers. 
+Finally there are flows for Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your receivers. Note: If you use encrypted mode you need to provide the decryption key in a device list file on every receiver. Tip: Use Ansible to deploy updated lists on all receivers.
 
-This solution makes it also very easy to have multiple receivers and you can easily move the devices around between them. As long as one device reaches one receiver everything will work. If it reaches multiple receivers you can even reboot them without data loss.
+This solution makes it also very easy to have multiple receivers and you can easily move the devices around between them. As long as one device reaches one receiver everything will work. If it reaches multiple receivers you can even reboot one by one without data loss.
 
 There are two slightly different versions. `Node-RED flows Callback mode.json` sends directly via curl and HTTP the data to Node-RED. This version is only intended when you don't have a MQTT broker.
 
