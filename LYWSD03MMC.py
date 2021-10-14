@@ -389,12 +389,7 @@ if args.mqttconfigfile:
 	port = int(mqttConfig["MQTT"]["port"])
 
 	# MQTTS parameters
-	tls = int(mqttConfig["MQTT"]["tls"]) if "tls" in mqttConfig["MQTT"] else 0
-	if tls != 0:
-		cacerts = mqttConfig["MQTT"]["cacerts"] if mqttConfig["MQTT"]["cacerts"] else None
-		certificate = mqttConfig["MQTT"]["certificate"] if mqttConfig["MQTT"]["certificate"] else None
-		certificate_key = mqttConfig["MQTT"]["certificate_key"] if mqttConfig["MQTT"]["certificate_key"] else None
-		insecure = int(mqttConfig["MQTT"]["insecure"])
+	tls = int(mqttConfig["MQTT"].get("tls") or 0)
 	username = mqttConfig["MQTT"]["username"]
 	password = mqttConfig["MQTT"]["password"]
 	MQTTTopic = mqttConfig["MQTT"]["topic"]
@@ -425,6 +420,10 @@ if args.mqttconfigfile:
 		client.will_set(lwt, lastwill, qos=1)
 	# MQTTS parameters
 	if tls:
+		cacerts = mqttConfig["MQTT"].get("cacerts") or None
+		certificate = mqttConfig["MQTT"].get("certificate") or None
+		certificate_key = mqttConfig["MQTT"].get("certificate_key") or None
+		insecure = int(mqttConfig["MQTT"]["insecure"])
 		client.tls_set(cacerts, certificate, certificate_key, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS, ciphers=None)
 		client.tls_insecure_set(insecure)
 	
