@@ -432,7 +432,8 @@ elif not args.atc:
 	os._exit(1)
 
 if args.TwoPointCalibration:
-	if(not(args.calpoint1 and args.offset1 and args.calpoint2 and args.offset2)):
+	if(not(args.calpoint1 is not None and args.offset1 is not None
+	       and args.calpoint2 is not None and args.offset2 is not None)):
 		print("In 2 Point calibration you have to enter 4 points")
 		os._exit(1)
 	elif(args.offset):
