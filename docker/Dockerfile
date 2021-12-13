@@ -6,6 +6,8 @@ FROM xavierrrr/xrrzero:stretchpython3.7
 # > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
 ENV LANG C.UTF-8
 
+RUN sudo apt-get update
+
 RUN sudo apt-get -y --no-install-recommends install python-pip libglib2.0-dev
 
 RUN /usr/local/bin/pip3.7 install bluepy
