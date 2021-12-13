@@ -608,8 +608,7 @@ elif args.atc:
 
 			batteryVoltage=None
 
-			# FIXME - This checks for lengths of 26, 16 and 22 while further along it checks for a length of 30 for custom format. It will never match that because the length of 30 is not included in this check...
-			if(dataIdentifier == "1A18") and not args.onlydevicelist or (dataIdentifier == "1A18" and mac in sensors) and (len(strippedData_str) == 26 or len(strippedData_str) == 16 or len(strippedData_str) == 22): #only Data from ATC devices
+			if(dataIdentifier == "1A18") and not args.onlydevicelist or (dataIdentifier == "1A18" and mac in sensors) and (len(strippedData_str) in (16, 22, 26, 30)): #only Data from ATC devices
 				if len(strippedData_str) == 30: #custom format, next-to-last ist adv number
 					advNumber = strippedData_str[-4:-2]
 				else:
@@ -628,7 +627,7 @@ elif args.atc:
 						batteryVoltage = int(strippedData_str[20:24], 16) / 1000
 						batteryPercent = int(strippedData_str[18:20], 16)
 
-					elif len(strippedData_str) == 30: #custom format
+					elif len(strippedData_str) == 30: #Custom format
 						print("BLE packet - Custom: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
 						advCounter[macStr] = advNumber
 						temperature = int.from_bytes(bytearray.fromhex(strippedData_str[12:16]),byteorder='little',signed=True) / 100.
