@@ -679,6 +679,7 @@ elif args.atc:
 				measurement.rssi = rssi
 				return measurement
 
+		# Tested with Qingping CGG1 and CGDK2
 		def decode_data_qingping(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "cdfd88"
 			paketStart = data_str.find(preeamble)
@@ -689,7 +690,6 @@ elif args.atc:
 
 			if(dataIdentifier == "88") and not args.onlydevicelist or (dataIdentifier == "88" and mac in sensors) and len(strippedData_str) == 32:
 				print("BLE packet - Qingping: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
-				advCounter[macStr] = strippedData_str
 				temperature = int.from_bytes(bytearray.fromhex(strippedData_str[18:22]),byteorder='little',signed=True) / 10.
 				humidity = int.from_bytes(bytearray.fromhex(strippedData_str[22:26]),byteorder='little',signed=True) / 10.
 				batteryPercent = int(strippedData_str[30:32], 16)
