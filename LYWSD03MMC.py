@@ -65,8 +65,13 @@ def myMQTTPublish(topic,jsonMessage):
 	if len(subtopics) > 0:
 		messageDict = json.loads(jsonMessage)
 		for subtopic in subtopics:
-			print("Topic:",subtopic)
-			MQTTClient.publish(topic + "/" + subtopic,messageDict[subtopic],0)
+			if "=" in subtopic:
+				subtopic = subtopic.split("=")
+				print("Topic:",subtopic[0], "(", subtopic[1], ")")
+				MQTTClient.publish(topic + "/" + subtopic[0],messageDict[subtopic[1]],0)
+			else:
+				print("Topic:",subtopic)
+				MQTTClient.publish(topic + "/" + subtopic,messageDict[subtopic],0)
 	if not mqttJSONDisabled:
 		MQTTClient.publish(topic,jsonMessage,1)
 
