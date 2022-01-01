@@ -318,6 +318,7 @@ basement/livingroom/humidity
 ``` 
 When using subtopics options you should configure a topic for each sensor otherwise values would get mixed under topic `ATCThermometer/temperature`, of course.
 
+Subtopics can be given custom names using `custom_value_name=value_name` when defining a subtopic. This can be used to have multiple receivers pointing to the same topics, with different RSSI subtopics using the option `subtopics=temperature,voltage,humidity,rx1_rssi=rssi` on one device and `subtopics=temperature,voltage,humidity,rx2_rssi=rssi` on another.
 
 Still there is also the JSON output at topic `ATCThermometer` respectively `basement/livingroom` 
 To disable JSON output in this case, append nojson to suptopics, so in this case `subtopics=temperature,voltage,humidity,nojson`
