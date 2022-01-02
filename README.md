@@ -6,6 +6,16 @@ By default this sensor doesn't transmit its values in the advertisement data, li
 
 Once you're connected to the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
 
+## Supported sensors
+
+This script was originally made to support LYWSD03MMC devices running Xiaomi firmware but support for other hardware and firmware was added later.
+
+Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2
+
+Normal (active connection) device support: LYWSD03MMC
+
+Qingping format advertisements are supported so it's possible this script also support advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
+
 ## Prequisites / Requirements
 
 You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py. This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
@@ -27,7 +37,7 @@ If you use integrated MQTT client paho-mqtt is needed. Install via
 
 Instead of `pip3` it may be just `pip`, depeding of your installation.
 
-### Requirements for reading sensors with ATC firmware in passive mode
+### Requirements for reading sensors in passive mode
 
 Additional requirements if you want to use passive mode. If you don't use passive mode, please ignore this section.
 ```
@@ -42,15 +52,6 @@ Bluetooth LE Scanning needs root. To run the script for AT with normal user righ
 sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)
 ```
 After a Python upgrade, you have to redo the above step.
-
-## Supported sensors
-
-This script was originally made to support LYWSD03MMC devices running Xiaomi firmware but support for other hardware and firmware was added later.
-
-Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2
-Normal (active connection) device support: LYWSD03MMC
-
-Qingping format advertisements are supported so it's possible this script also support advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
 
 ## Usage
 
@@ -151,7 +152,7 @@ For longer batterylife and higher stability passive mode is recommended. In the 
 
 With version 4 of MiTemperature2/LYWSD03MMC.py also custom format advertisements as introduced by pvvx are supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
 
-Also 'Qingping' format advertisements are supported which are sent by various Qingping sensors when they are set to this specific mode of operation. They can easily be set in this mode by adding the sensors to the Qingping+ app. After this they will start sending (unencrypted) Qingping advertisements. Some of these sensors can also be set to Mijia (or other) modes but support for this is untested.
+Also Qingping format advertisements are supported which are sent by various Qingping sensors when they are set to this specific mode of operation. They can easily be set in this mode by adding the sensors to the Qingping+ app. After this they will start sending (unencrypted) Qingping advertisements. Some of these sensors can also be set to Mijia (or other) modes but support for this is untested. Qingping format advertisements do not include the voltage of the battery, the battery percentage includes one decimal and the humidity is an integer value without decimals. This is a bit different from other formats but still quite workable for keeping a history of measurements.
 
 In passive mode the script listens for BLE advertisements. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
 
