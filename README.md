@@ -1,18 +1,28 @@
 # Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor
 
-With this script you can read out the value of your LYWSD03MMC sensor, e.g. with Raspberry PI. Note Raspbery Pi 4 has a very limited bluetooth range. PI Zero W gives much longer range.
+With this script you can read out the data of your LYWSD03MMC (and some other) sensors, e.g. with Raspberry Pi. Note Raspbery Pi 4 has a very limited bluetooth range. Pi Zero W gives much longer range.
 
-This sensor doesn't transmit its values in the advertisment data, like the LYWSDCGQ Bluetooth thermometer. This is more privacy friendly since no one can sniff your temperature readings. On the other side this means you have to establish a bluetooth connection with the device to get the data. When you're connected no other connection is accepted, meaning if you hold the connection no other can readout your temperature and humidity.
+By default this sensor doesn't transmit its values in the advertisement data, like the LYWSDCGQ Bluetooth thermometer. This is more privacy friendly since no one can sniff your temperature readings. On the other side this means you have to establish a bluetooth connection with the device to get the data. When you're connected no other connection is accepted, meaning if you hold the connection no other can readout your temperature and humidity.
 
-Once you're connected the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
+Once you're connected to the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
+
+## Supported sensors
+
+This script was originally made to support LYWSD03MMC devices running Xiaomi firmware but support for other hardware and firmware was added later.
+
+Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2
+
+Normal (active connection) device support: LYWSD03MMC
+
+Qingping format advertisements are supported so it's possible this script also supports advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
 
 ## Prequisites / Requirements
 
-You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
+You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py. This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
 
-For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/ If doing so: Omit the rpi-update step.
+For example Raspbian Stretch has only Python 3.5.3. If you like to upgrade your Distribution to current Buster release follow this Tutorial https://pimylifeup.com/upgrade-raspbian-stretch-to-raspbian-buster/. If doing so: Omit the rpi-update step.
 
-If you like installing/compiling Python3.7 please take a look at this tutorial https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d However it took about 5 hours to compile/run the regressiontests on a Raspberry PI3B. I use this compiled version directly without install. If you do, too, you have to change the first line in the script, pointing to your compiled Python version. For bluepy you can copy the bluepy-folder from home/pi/.local/lib/python3.7/site-packages/bluepy to <yourPath>Python-3.7.4/Lib and do a chmod +x bluepy-helper in <yourPath>Python-3.7.4/Lib/bluepy
+If you like installing/compiling Python3.7 please take a look at this tutorial https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d However it took about 5 hours to compile/run the regressiontests on a Raspberry Pi3B. I use this compiled version directly without install. If you do, too, you have to change the first line in the script, pointing to your compiled Python version. For bluepy you can copy the bluepy-folder from home/pi/.local/lib/python3.7/site-packages/bluepy to <yourPath>Python-3.7.4/Lib and do a chmod +x bluepy-helper in <yourPath>Python-3.7.4/Lib/bluepy.
 
 Prequisites: python3 bluez python3-pip bluepy requests
 install via
@@ -27,16 +37,16 @@ If you use integrated MQTT client paho-mqtt is needed. Install via
 
 Instead of `pip3` it may be just `pip`, depeding of your installation.
 
-### Requirements for reading Xiaomi Temperature and Humidity Sensor with ATC firmware
+### Requirements for reading sensors in passive mode
 
-Additional requirements if you want to use the atc version. If you don't use ATC version, please ignore this section.
+Additional requirements if you want to use passive mode. If you don't use passive mode, please ignore this section.
 ```
 sudo apt install bluetooth libbluetooth-dev
 pip3 install pybluez
 ```
 
-Additional requirements for encrypted ATC-Mode: `pip3 install pycryptodomex` 
-Because of a bug in pycryptodomex you need `pip3 install pycryptodomex==3.11` to install older version for Raspberry PI Zero W, see https://github.com/JsBergbau/MiTemperature2/issues/104
+Additional requirements for encrypted passive mode: `pip3 install pycryptodomex`
+Because of a bug in pycryptodomex you need `pip3 install pycryptodomex==3.11` to install older version for Raspberry PI Zero W, see https://github.com/JsBergbau/MiTemperature2/issues/104.
 
 Bluetooth LE Scanning needs root. To run the script for AT with normal user rights, please execute
 ```
@@ -48,16 +58,22 @@ After a Python upgrade, you have to redo the above step.
 
 ```
 ---------------------------------------------
-MiTemperature2 / ATC Thermometer version 3.0
+MiTemperature2 / ATC Thermometer version 5.0
 ---------------------------------------------
+
+
+Please read README.md in this folder. Latest version is available at https://github.com/JsBergbau/MiTemperature2#readme
+This file explains very detailed about the usage and covers everything you need to know as user.
+
+
 usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--count N] [--interface N] [--unreachable-count N]
                      [--mqttconfigfile MQTTCONFIGFILE] [--round] [--debounce]
                      [--offset OFFSET] [--TwoPointCalibration]
                      [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
                      [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
-                     [--callback CALLBACK] [--httpcallback URL] [--name NAME] [--skipidentical N]
-                     [--influxdb N] [--atc] [--watchdogtimer X]
+                     [--callback CALLBACK] [--httpcallback HTTPCALLBACK] [--name NAME] [--skipidentical N]
+                     [--influxdb N] [--passive] [--watchdogtimer X]
                      [--devicelistfile DEVICELISTFILE] [--onlydevicelist]
                      [--rssi]
 
@@ -65,8 +81,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --device AA:BB:CC:DD:EE:FF, -d AA:BB:CC:DD:EE:FF
                         Set the device MAC-Address in format AA:BB:CC:DD:EE:FF
-  --battery [], -b []   Get estimated battery level, in ATC-Mode: Get battery
-                        level from device
+  --battery [], -b []   Get estimated battery level, in passive mode: Get battery level from device
   --count N, -c N       Read/Receive N measurements and then exit script
   --interface N, -i N   Specifiy the interface number to use, e.g. 1 for hci1
   --unreachable-count N, -urc N
@@ -75,9 +90,8 @@ optional arguments:
                         specify a configurationfile for MQTT-Broker
 
 Rounding and debouncing:
-  --round, -r           Round temperature to one decimal place
-  --debounce, -deb      Enable this option to get more stable temperature
-                        values, requires -r option
+  --round, -r           Round temperature to one decimal place (and in passive mode humidity to whole numbers)
+  --debounce, -deb      Enable this option to get more stable temperature values, requires -r option
 
 Offset calibration mode:
   --offset OFFSET, -o OFFSET
@@ -85,8 +99,7 @@ Offset calibration mode:
 
 2 Point Calibration:
   --TwoPointCalibration, -2p
-                        Use complex calibration mode. All arguments below are
-                        required
+                        Use complex calibration mode. All arguments below are required
   --calpoint1 CALPOINT1, -p1 CALPOINT1
                         Enter the first calibration point
   --offset1 OFFSET1, -o1 OFFSET1
@@ -98,64 +111,57 @@ Offset calibration mode:
 
 Callback related arguments:
   --callback CALLBACK, -call CALLBACK
-                        Pass the path to a program/script that will be called
-                        on each new measurement
-  --httpcallback URL, -http URL
-                        Pass the URL to a program/script that will be called
-                        on each new measurement
-  --name NAME, -n NAME  Give this sensor a name reported to the callback
-                        script
+                        Pass the path to a program/script that will be called on each new measurement
+  --httpcallback HTTPCALLBACK, -http HTTPCALLBACK
+                        Pass the URL to a program/script that will be called on each new measurement
+  --name NAME, -n NAME  Give this sensor a name reported to the callback script
   --skipidentical N, -skip N
-                        N consecutive identical measurements won't be reported
-                        to callbackfunction
+                        N consecutive identical measurements won't be reported to callbackfunction
   --influxdb N, -infl N
-                        Optimize for writing data to influxdb,1 timestamp
-                        optimization, 2 integer optimization
+                        Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization
 
-ATC mode related arguments:
-  --atc, -a             Read the data of devices with custom ATC firmware
-                        flashed, use --battery to get battery level
-                        additionaly in percent
+Passive mode related arguments:
+  --passive, -p, --atc, -a
+                        Read the data of devices based on BLE advertisements, use --battery to get battery level additionaly in percent
   --watchdogtimer X, -wdt X
-                        Re-enable scanning after not receiving any BLE packet
-                        after X seconds
+                        Re-enable scanning after not receiving any BLE packet after X seconds
   --devicelistfile DEVICELISTFILE, -df DEVICELISTFILE
-                        Specify a device list file giving further details to
-                        devices
+                        Specify a device list file giving further details to devices
   --onlydevicelist, -odl
                         Only read devices which are in the device list file
   --rssi, -rs           Report RSSI via callback
-
 ```
 
-Note: When using rounding option you could see 0.1 degress more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
+Note: When using rounding option you could see 0.1 degrees more in the script output than shown on the display. Obviously the LYWSD03MMC just truncates the second decimal place.
 
-Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894 . But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
+Reading the battery level with the standard Bluetooth Low Energy characteristics doesn't work. It always returns 99 % battery level. Or to be correct, sometimes 10 % when the battery is really empty, see https://github.com/JsBergbau/MiTemperature2/issues/1#issuecomment-588156894. But often before that device just shuts down before it can report another battery level. With every measurement the Aqara sensor also transmits the battery voltage. This voltage is transformed into a battery level 3.1V are 100%, 2.1V 0%.
 
-The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314
+The `--count` option is intended to save even more power. So far it is not proven, that only connecting at some interval will actually save power. See this discussion https://github.com/JsBergbau/MiTemperature2/issues/3#issuecomment-572982314.
 
-With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1
+With the `--interface` option you specify the number of the bluetooth adapter to use. So `--interface 1` for using hci1.
 
 With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte. Of course there are now more measurements stored in influxdb, but still overall size in influxdb is still lower. Depends also environment, of course. With a very steady environment and very seldom writing identical valus then size in influxdb would be smaller not writing every 10 seconds, of course. Integer optimizsation `--influxdb 2`is not implemented yet.
 
 `--unreachable-count N, -urc N` Use this option when you want to exit your script after collection the measurement but your sensor is somehow not reachable. Then after the specified number of failed connection tries the script will exit.
 
-### ATC Mode Usage
+### Passive Mode Usage
 
-Thanks to https://github.com/pvvx/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisments. In this mode you don't have to connect to the sensor. This saves a lot of power, especially in cases where the signal strength is low, see https://github.com/JsBergbau/MiTemperature2/issues/32 
-I've also noticed a higher range. In addition you can have multiple receivers, see Node-RED section https://github.com/JsBergbau/MiTemperature2#node-red-flows
+Thanks to https://github.com/atc1441/ATC_MiThermometer and https://github.com/pvvx/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisements. In this mode you don't have to connect to the sensor. This saves a lot of power, especially in cases where the signal strength is low, see https://github.com/JsBergbau/MiTemperature2/issues/32.
+I've also noticed a higher range. In addition you can have multiple receivers, see Node-RED section https://github.com/JsBergbau/MiTemperature2#node-red-flows.
 
-For longer batterylife and higher stability ATC mode is recommended. In the flasher Webpage selecting only `Atc1441` as Advertising type is recommended. You can than increase the Advertising interval to save power for sensors with good reception. For sensors with weaker reception I would keep the default of 2500 ms. You could even increase it for sensors with very bad reception. 
+For longer batterylife and higher stability passive mode is recommended. In the flasher Webpage selecting only `Atc1441` as Advertising type is recommended. You can than increase the Advertising interval to save power for sensors with good reception. For sensors with weaker reception I would keep the default of 2500 ms. You could even increase it for sensors with very bad reception. 
 
-With version 4 of MiTemperature2/LYWSD03MMC.py also custom format advertisment type is supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
+Since version 4.0 custom format advertisements as introduced by pvvx are also supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
 
-In ATC mode the script listens for BLE advertisments and filters for ATC flashed LYWSD03MMC sensors. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
+Since version 5.0 Qingping format advertisements are supported. These are sent by various Qingping sensors when they are set to this specific mode of operation by adding the sensors to the Qingping+ app. After this they will start sending (unencrypted) Qingping advertisements. Some of these sensors can also be set to Mijia (or other) modes but support for this is untested. Qingping format advertisements do not include the voltage of the battery, the battery percentage includes one decimal and the humidity is an integer value without decimals. This is a bit different from other formats but still quite workable for keeping a history of measurements.
 
-ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available. This is no real disadavantage because accuracy is impaired because of a lacking capciator, see https://github.com/pvvx/ATC_MiThermometer/issues/11#issuecomment-766776468
+In passive mode the script listens for BLE advertisements. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
 
-`--watchdogtimer X` sometimes your device leaves BLE scanning mode, then you won't receive any data anymore. To avoid this after X seconds without receiving any BLE packet (not only from ATC sensors) BLE scanning mode is re-enabled. If you have configured your ATC LYWSD03MMC to advertise new data every 10 seconds, I recommend a setting of 5 seconds, so `--watchdogtimer 5`. On a Raspberry PI Zero W polling 10 sensors (2 are currently unreachable) this re-enabling BLE scan can happen a few times per minute. When polling 8 reachable sensors it happens less frequent but still at least once or twice a minute. 
+ATC firmware gives temperature only with one decimal place, so rounding and debouncing options are not available. This is no real disadavantage because accuracy is impaired because of a lacking capciator, see https://github.com/pvvx/ATC_MiThermometer/issues/11#issuecomment-766776468.
 
-One note about new advertising data: The ATC LYWSD03MMC sends out the data about every 2,5 seconds. After 10 seconds (4 advertising periods) it advertises new data and to detect this, it increases the paket counter. Only the values of first paket of this series with the same paketcounter is displayed and reported by callback, since the data in one series is identical.
+`--watchdogtimer X` sometimes your device leaves BLE scanning mode, then you won't receive any data anymore. To avoid this after X seconds without receiving any BLE packets (not only from ATC sensors) BLE scanning mode is re-enabled. If you have configured your sensor to advertise new data every 10 seconds, I recommend a setting of 5 seconds, so `--watchdogtimer 5`. On a Raspberry Pi Zero W polling 10 sensors (2 are currently unreachable) this re-enabling BLE scan can happen a few times per minute. When polling 8 reachable sensors it happens less frequent but still at least once or twice a minute. 
+
+One note about new advertising data: The ATC firmware sends out the data about every 2,5 seconds. After 10 seconds (4 advertising periods) it advertises new data and to detect this, it increases the packet counter. Only the values of first packet of this series with the same packetcounter is displayed and reported by callback, since the data in one series is identical.
 
 `--devicelistfile <filename>` Use this option to give your sensors a name/alias. This file can also be on a network drive. So you can keep it up to date on a single place for multiple receivers. Also in this file is space for calibration data and you can give each device it's own MQTT topic.
 
@@ -203,35 +209,35 @@ decryption = k9088F9B4F7EC3BB52378F8F31CB74073
 
 `--rssi` Reports the RSSI via callback
 
-`--battery` is also available in ATC mode. Instead of estimating the battery level like in connection mode, the batterylevel in percent is reported exactly as on device's screen. 
+`--battery` is also available in passive mode. Instead of estimating the battery level like in connection mode, the batterylevel in percent is reported exactly as on device's screen. 
 
 Hint for storing the data in influx: 
-When you have configured an advertisment interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
+When you have configured an advertisement interval of 10 seconds: Ideally store one measurement every 25 seconds to use very efficient RLE compression for your measurements. With storing the data every 25s, almost every timestamp is stored. This leads to RLE compression of the timestamp thus saving a lot of space in influxdb. With an interval of 20 seconds in tests it occured quite often, that timestamp slots were not filled and thus no RLE compression can be used. 
 
 With original firmware where you connect to each sensor every 6 seconds an measurement is sent and storing every 10 seconds a measurement is a good value.
 
-ATC mode uses passive scanning for saving battery life of the sensors. Read more about this here https://github.com/JsBergbau/MiTemperature2/issues/41#issuecomment-735361200
+Passive mode uses advertisement scanning for saving battery life of the sensors. Read more about this here https://github.com/JsBergbau/MiTemperature2/issues/41#issuecomment-735361200
 
-#### Encrypted ATC Mode
+#### Encrypted Passive Mode
 
-Beginning with v4 of the script encrypted ATC mode is supported. You have to use a devicelist file, option `--devicelistfile` and add an entry for every sensor and its key. 
+Beginning with v4 of the script encrypted passive mode is supported. You have to use a devicelist file, option `--devicelistfile` and add an entry for every sensor and its key. 
 
-To use this mode, copy or set a new 32 char hexadecimal key (see example ini, note the preceding `k` is only in ini file) by pressing "Show all mi keys" in Telik Flasher and in case of setting a new one pressing button "Set new Token & Bind keys". 
-At "Advertising type" uncheck "AdFlags" and check "Encrypted beacon" for shortest encrypted paket length. When "Atc1441" is chosen, paket length is really minimal, however temperature is only reported in 0.5 °C steps. You can also choose "Custom" format, this will report 2 decimal places for temperature and humidity. When using `--round` option, temperature and humidity are rounded to one decimal place.
+To use this mode, copy or set a new 32 char hexadecimal key (see example ini, note the preceding `k` is only in ini file) by pressing "Show all mi keys" in Telink Flasher and in case of setting a new one pressing button "Set new Token & Bind keys". 
+At "Advertising type" uncheck "AdFlags" and check "Encrypted beacon" for shortest encrypted packet length. When "Atc1441" is chosen, packet length is really minimal, however temperature is only reported in 0.5 °C steps. You can also choose "Custom" format, this will report 2 decimal places for temperature and humidity. When using `--round` option, temperature and humidity are rounded to one decimal place.
 
-**Remember to set PinCode**. Without Pincode an adversary can connect and copy your encryption key. He can even lock you out by setting a pincode. If you like to disable Pincode again, enter `000000`, so 6 zeros in a row. 
+**Remember to set PinCode**. Without Pincode an adversary can connect and copy your encryption key. He can even lock you out by setting a pincode. If you like to disable Pincode again, enter `000000`, so 6 zeros in a row.
 
-**No voltage output, only battery level**: Encrypted ATC mode does not report any battery voltage, only battery level is transmitted. Thus voltage is always `0` in encrypted ATC mode. When not using integrated MQTT, use `--battery` to report battery level via callback. 
+**No voltage output, only battery level**: Encrypted passive mode does not report any battery voltage, only battery level is transmitted. Thus voltage is always `0` in encrypted passive mode. When not using integrated MQTT, use `--battery` to report battery level via callback. 
 
 
 
 ## Built in MQTT support
 
-Since Version 3 of MiTemperature2 there is built in support for MQTT. Especially if you receive a lot of sensors executing a callback for each measurement is quite expensive. For a raspberry PI Zero W for example with a few sensors I have an average CPU usage of 35 %, after using built in MQTT support only about 10 % CPU is used on average and there are also other services running. Quite a lot performance measurements were made to keep CPU usage for MQTT transmit low. 
+Since Version 3 of MiTemperature2 there is built in support for MQTT. Especially if you receive a lot of sensors executing a callback for each measurement is quite expensive. For a raspberry Pi Zero W for example with a few sensors I have an average CPU usage of 35 %, after using built in MQTT support only about 10 % CPU is used on average and there are also other services running. Quite a lot performance measurements were made to keep CPU usage for MQTT transmit low. 
 
 With callback every single message spawns a new process, a new TCP connection is established and then closed again. With integrated MQTT support one connection is opened at startup and then maintained all the time, saving a lot of CPU cycles and network overhead. 
 
-A testscript was made and tested on a raspberry PI4 booted with opion `force_turbo = 1`. With that option CPU runs always at 1500 MHz so measurements are easier to compare. Because `perf stat` wouldn't report the used CPU cycles measurement was taken via `time` command. 2000 generated values were sent and the time measured. With callback to Node-RED using curl time was about 77 seconds. Using mosquitto_pub and the same JSON string time was about 42. So mosquitto_pub and MQTT is a lot faster and efficient than using HTTP via curl. Then finally 2000 values were sent via integrated MQTT support. This took about 2 seconds whereas most of that time was required to import all libraries and so on. Transmitting 10.000 values via integrated MQTT only took about 4 seconds. So there is a massive performance plus with integrated MQTT.
+A testscript was made and tested on a raspberry Pi4 booted with opion `force_turbo = 1`. With that option CPU runs always at 1500 MHz so measurements are easier to compare. Because `perf stat` wouldn't report the used CPU cycles measurement was taken via `time` command. 2000 generated values were sent and the time measured. With callback to Node-RED using curl time was about 77 seconds. Using mosquitto_pub and the same JSON string time was about 42. So mosquitto_pub and MQTT is a lot faster and efficient than using HTTP via curl. Then finally 2000 values were sent via integrated MQTT support. This took about 2 seconds whereas most of that time was required to import all libraries and so on. Transmitting 10.000 values via integrated MQTT only took about 4 seconds. So there is a massive performance plus with integrated MQTT.
 
 Data is transmitted that way (but can be changed to subtopic mode, see below):
 ```json
@@ -341,9 +347,9 @@ The temperature values often change between the same values. To get cleaner temp
 When looking at the specifications this LYWSD03MMC Sensor is specified from 0 °C to 60 °C. The LYWSDCGQ (the Bluetooth Temperatur sensor with the round display and an AAA battery) is specified from -9.9. 
 I can confirm the LYWSD03MMC also goes down to -9.9 °C. At colder temperatures it only shows an "L". But even at lower temperatures the correct temperature is still sent! So you even could use ist to watch the temperature in your freezer which is a lot below -9.9 °C. However batterylife may be significantly reduced at those low temperatures.
 
-### High battery usage (not applicable for recommende ATC mode)
+### High battery usage (not applicable for recommended passive mode)
 
-There is currently no way to detect a too high battery drain except having empty batteries in less than 2 month. If you encouter lots of empty batteries, please reduce distance between LYWSD03MMC sensor and your Bluetooth receiver. With a voltage drop of 0.1 V in 1.5 month everything is perfectly fine. If it is a bit more, don't worry. Can be a button cell of lower quality. For more infos please visit https://github.com/JsBergbau/MiTemperature2/issues/32
+There is currently no way to detect a too high battery drain except having empty batteries in less than 2 months. If you encounter lots of empty batteries, please reduce distance between the sensor and your Bluetooth receiver. With a voltage drop of 0.1 V in 1.5 month everything is perfectly fine. If it is a bit more, don't worry. Can be a button cell of lower quality. For more infos please visit https://github.com/JsBergbau/MiTemperature2/issues/32
 
 ## Sample output
 
@@ -396,12 +402,12 @@ Battery voltage: 2.944
 Battery level: 84
 ```
 
-### Sample output ATC mode
+### Sample output passive mode
 
 ```
 ../LYWSD03MMC.py --atc --mqttconfigfile mqtt.conf --devicelistfile MeineSensoren.ini
 ---------------------------------------------
-MiTemperature2 / ATC Thermometer version 4.0
+MiTemperature2 / ATC Thermometer version 5.0
 ---------------------------------------------
 
 
@@ -409,12 +415,12 @@ Please read README.md in this folder. Latest version is available at https://git
 This file explains very detailed about the usage and covers everything you need to know as user.
 
 
-Script started in ATC Mode
+Script started in passive Mode
 ----------------------------
 In this mode all devices within reach are read out, unless a devicelistfile and --onlydevicelist is specified.
 Also --name Argument is ignored, if you require names, please use --devicelistfile.
 In this mode debouncing is not available. Rounding option will round humidity and temperature to one decimal place.
-ATC mode usually requires root rights. If you want to use it with normal user rights,
+Passive mode usually requires root rights. If you want to use it with normal user rights,
 please execute "sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)"
 You have to redo this step if you upgrade your python version.
 
