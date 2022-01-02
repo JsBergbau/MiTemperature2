@@ -669,10 +669,6 @@ elif args.atc:
 				else: #Packet is just repeated
 					return
 
-				if args.round:
-					temperature=round(temperature,1)
-					humidity=round(humidity,1)
-
 				measurement.battery = batteryPercent
 				measurement.humidity = humidity
 				measurement.temperature = temperature
@@ -694,10 +690,6 @@ elif args.atc:
 				temperature = int.from_bytes(bytearray.fromhex(strippedData_str[18:22]),byteorder='little',signed=True) / 10.
 				humidity = int.from_bytes(bytearray.fromhex(strippedData_str[22:26]),byteorder='little',signed=True) / 10.
 				batteryPercent = int(strippedData_str[30:32], 16)
-
-				if args.round:
-					temperature=round(temperature,1)
-					humidity=round(humidity,1)
 
 				measurement.battery = batteryPercent
 				measurement.humidity = humidity
@@ -721,6 +713,15 @@ elif args.atc:
 			)
 
 			if measurement:
+				if args.influxdb == 1:
+					measurement.timestamp = int((time.time() // 10) * 10)
+				else:
+					measurement.timestamp = int(time.time())
+
+				if args.round:
+					measurement.temperature=round(measurement.temperature,1)
+					measurement.humidity=round(measurement.humidity,1)
+
 				print("Temperature: ", measurement.temperature)
 				print("Humidity: ", measurement.humidity)
 				if measurement.voltage != None:
