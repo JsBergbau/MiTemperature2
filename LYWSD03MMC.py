@@ -45,8 +45,8 @@ class Measurement:
 
 	def __eq__(self, other): #rssi may be different, so exclude it from comparison
 		if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.sensorname == other.sensorname:
-			#in atc mode also exclude voltage as it changes often due to frequent measurements
-			return True if args.atc else (self.voltage == other.voltage)
+			#in passive mode also exclude voltage as it changes often due to frequent measurements
+			return True if args.passive else (self.voltage == other.voltage)
 		else:
 			return False
 
@@ -72,7 +72,7 @@ def myMQTTPublish(topic,jsonMessage):
 
 
 def signal_handler(sig, frame):
-	if args.atc:
+	if args.passive:
 		disable_le_scan(sock)	
 	os._exit(0)
 		
@@ -321,7 +321,7 @@ def MQTTOnDisconnect(client, userdata,rc):
 # Main loop --------
 parser=argparse.ArgumentParser(allow_abbrev=False,epilog=readme)
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
-parser.add_argument("--battery","-b", help="Get estimated battery level, in ATC-Mode: Get battery level from device", metavar='', type=int, nargs='?', const=1)
+parser.add_argument("--battery","-b", help="Get estimated battery level, in passive mode: Get battery level from device", metavar='', type=int, nargs='?', const=1)
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
 parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
 parser.add_argument("--unreachable-count","-urc", help="Exit after N unsuccessful connection tries", metavar='N', type=int, default=0)
@@ -329,7 +329,7 @@ parser.add_argument("--mqttconfigfile","-mcf", help="specify a configurationfile
 
 
 rounding = parser.add_argument_group("Rounding and debouncing")
-rounding.add_argument("--round","-r", help="Round temperature to one decimal place (and in ATC mode humidity to whole numbers)",action='store_true')
+rounding.add_argument("--round","-r", help="Round temperature to one decimal place (and in passive mode humidity to whole numbers)",action='store_true')
 rounding.add_argument("--debounce","-deb", help="Enable this option to get more stable temperature values, requires -r option",action='store_true')
 
 offsetgroup = parser.add_argument_group("Offset calibration mode")
@@ -349,12 +349,12 @@ callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported
 callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
 
-atcgroup = parser.add_argument_group("ATC mode related arguments")
-atcgroup.add_argument("--atc","-a", help="Read the data of devices with custom ATC firmware flashed, use --battery to get battery level additionaly in percent",action='store_true')
-atcgroup.add_argument("--watchdogtimer","-wdt",metavar='X', type=int, help="Re-enable scanning after not receiving any BLE packet after X seconds")
-atcgroup.add_argument("--devicelistfile","-df",help="Specify a device list file giving further details to devices")
-atcgroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')
-atcgroup.add_argument("--rssi","-rs", help="Report RSSI via callback",action='store_true')
+passivegroup = parser.add_argument_group("Passive mode related arguments")
+passivegroup.add_argument("--passive","-p","--atc","-a", help="Read the data of devices based on BLE advertisements, use --battery to get battery level additionaly in percent",action='store_true')
+passivegroup.add_argument("--watchdogtimer","-wdt",metavar='X', type=int, help="Re-enable scanning after not receiving any BLE packet after X seconds")
+passivegroup.add_argument("--devicelistfile","-df",help="Specify a device list file giving further details to devices")
+passivegroup.add_argument("--onlydevicelist","-odl", help="Only read devices which are in the device list file",action='store_true')
+passivegroup.add_argument("--rssi","-rs", help="Report RSSI via callback",action='store_true')
 
 
 args=parser.parse_args()
@@ -427,7 +427,7 @@ if args.device:
 	else:
 		print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
 		os._exit(1)
-elif not args.atc:
+elif not args.passive:
 	parser.print_help()
 	os._exit(1)
 
@@ -536,13 +536,13 @@ if args.device:
 		print ("Waiting...")
 		# Perhaps do something else here
 
-elif args.atc:
-	print("Script started in ATC Mode")
-	print("----------------------------")
+elif args.passive:
+	print("Script started in passive mode")
+	print("------------------------------")
 	print("In this mode all devices within reach are read out, unless a devicelistfile and --onlydevicelist is specified.")
 	print("Also --name Argument is ignored, if you require names, please use --devicelistfile.")
 	print("In this mode debouncing is not available. Rounding option will round humidity and temperature to one decimal place.")
-	print("ATC mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
+	print("Passive mode usually requires root rights. If you want to use it with normal user rights, \nplease execute \"sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)\"")
 	print("You have to redo this step if you upgrade your python version.")
 	print("----------------------------")
 
