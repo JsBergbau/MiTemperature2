@@ -622,6 +622,7 @@ elif args.atc:
 					if len(strippedData_str) == 26: #ATC1441 Format
 						print("BLE packet - ATC1441: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
 						advCounter[macStr] = advNumber
+						#temperature = int(data_str[12:16],16) / 10.    # this method fails for negative temperatures
 						temperature = int.from_bytes(bytearray.fromhex(strippedData_str[12:16]),byteorder='big',signed=True) / 10.
 						humidity = int(strippedData_str[16:18], 16)
 						batteryVoltage = int(strippedData_str[20:24], 16) / 1000
