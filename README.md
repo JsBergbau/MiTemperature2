@@ -14,7 +14,7 @@ Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2
 
 Normal (active connection) device support: LYWSD03MMC
 
-Qingping format advertisements are supported so it's possible this script also support advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
+Qingping format advertisements are supported so it's possible this script also supports advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
 
 ## Prequisites / Requirements
 
@@ -58,7 +58,7 @@ After a Python upgrade, you have to redo the above step.
 
 ```
 ---------------------------------------------
-MiTemperature2 / ATC Thermometer version 4.0
+MiTemperature2 / ATC Thermometer version 5.0
 ---------------------------------------------
 
 
@@ -151,9 +151,9 @@ I've also noticed a higher range. In addition you can have multiple receivers, s
 
 For longer batterylife and higher stability passive mode is recommended. In the flasher Webpage selecting only `Atc1441` as Advertising type is recommended. You can than increase the Advertising interval to save power for sensors with good reception. For sensors with weaker reception I would keep the default of 2500 ms. You could even increase it for sensors with very bad reception. 
 
-With version 4 of MiTemperature2/LYWSD03MMC.py also custom format advertisements as introduced by pvvx are supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
+Since version 4.0 custom format advertisements as introduced by pvvx are also supported. This type gives 2 decimal places for temperature and humidity. The reading of the flags field is currently not supported. If you need support, please open an issue.
 
-Also Qingping format advertisements are supported which are sent by various Qingping sensors when they are set to this specific mode of operation. They can easily be set in this mode by adding the sensors to the Qingping+ app. After this they will start sending (unencrypted) Qingping advertisements. Some of these sensors can also be set to Mijia (or other) modes but support for this is untested. Qingping format advertisements do not include the voltage of the battery, the battery percentage includes one decimal and the humidity is an integer value without decimals. This is a bit different from other formats but still quite workable for keeping a history of measurements.
+Since version 5.0 Qingping format advertisements are supported. These are sent by various Qingping sensors when they are set to this specific mode of operation by adding the sensors to the Qingping+ app. After this they will start sending (unencrypted) Qingping advertisements. Some of these sensors can also be set to Mijia (or other) modes but support for this is untested. Qingping format advertisements do not include the voltage of the battery, the battery percentage includes one decimal and the humidity is an integer value without decimals. This is a bit different from other formats but still quite workable for keeping a history of measurements.
 
 In passive mode the script listens for BLE advertisements. So you start only one instance of this script and it reads out all your sensors. You can have multiple receivers and thus have a kind of cell network and your sensors are portable in a quite wide range. Use it optimally with influxdb and `--influxdb 1`. With this option timestamps are snapped to 10s and since influxdb only stores one value for one timestamp you won't have duplicate data in your database.
 
@@ -407,7 +407,7 @@ Battery level: 84
 ```
 ../LYWSD03MMC.py --atc --mqttconfigfile mqtt.conf --devicelistfile MeineSensoren.ini
 ---------------------------------------------
-MiTemperature2 / ATC Thermometer version 4.0
+MiTemperature2 / ATC Thermometer version 5.0
 ---------------------------------------------
 
 

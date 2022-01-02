@@ -2,7 +2,7 @@
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
 print("---------------------------------------------")
-print("MiTemperature2 / ATC Thermometer version 4.0")
+print("MiTemperature2 / ATC Thermometer version 5.0")
 print("---------------------------------------------")
 
 readme="""
