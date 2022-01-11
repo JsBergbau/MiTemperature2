@@ -116,7 +116,7 @@ def thread_SendingData():
 					continue
 
 			if args.callback:
-				fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
+				fmt = "sensorname,temperature,humidity,voltage" #don't try to separate by semicolon ';' os.system will use that as command separator
 				if ' ' in mea.sensorname:
 					sensorname = '"' + mea.sensorname + '"'
 				else:
@@ -172,15 +172,15 @@ def thread_SendingData():
 			print(traceback.format_exc())
 
 sock = None #from ATC 
-lastBLEPaketReceived = 0
+lastBLEPacketReceived = 0
 BLERestartCounter = 1
 def keepingLEScanRunning(): #LE-Scanning gets disabled sometimes, especially if you have a lot of BLE connections, this thread periodically enables BLE scanning again
 	global BLERestartCounter
 	while True:
 		time.sleep(1)
 		now = time.time()
-		if now - lastBLEPaketReceived > args.watchdogtimer:
-			print("Watchdog: Did not receive any BLE Paket within", int(now - lastBLEPaketReceived), "s. Restarting BLE scan. Count:", BLERestartCounter)
+		if now - lastBLEPacketReceived > args.watchdogtimer:
+			print("Watchdog: Did not receive any BLE packet within", int(now - lastBLEPacketReceived), "s. Restarting BLE scan. Count:", BLERestartCounter)
 			disable_le_scan(sock)
 			enable_le_scan(sock, filter_duplicates=False)
 			BLERestartCounter += 1
@@ -199,7 +199,7 @@ def calibrateHumidity2Points(humidity, offset1, offset2, calpoint1, calpoint2):
 	p2x=p2y - offset2
 	m = (p1y - p2y) * 1.0 / (p1x - p2x) # y=mx+b
 	#b = (p1x * p2y - p2x * p1y) * 1.0 / (p1y - p2y)
-	b = p2y - m * p2x #would be more efficient to do this calculations only once
+	b = p2y - m * p2x #would be more efficient to do these calculations only once
 	humidityCalibrated=m*humidity + b
 	if (humidityCalibrated > 100 ): #with correct calibration this should not happen
 		humidityCalibrated = 100
@@ -226,7 +226,7 @@ class MyDelegate(btle.DefaultDelegate):
 			temp=int.from_bytes(data[0:2],byteorder='little',signed=True)/100
 			#print("Temp received: " + str(temp))
 			if args.round:
-				#print("Temperatur unrounded: " + str(temp
+				#print("Temperature unrounded: " + str(temp
 				
 				if args.debounce:
 					global mode
@@ -425,7 +425,7 @@ if args.device:
 	if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
 		adress=args.device
 	else:
-		print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
+		print("Please specify device MAC address in format AA:BB:CC:DD:EE:FF")
 		os._exit(1)
 elif not args.passive:
 	parser.print_help()
@@ -527,7 +527,7 @@ if args.device:
 				unconnectedTime=int(time.time())
 				connected=False
 			if args.unreachable_count != 0 and connectionLostCounter >= args.unreachable_count:
-				print("Maximum numbers of unsuccessful connections reaches, exiting")
+				print("Maximum numbers of unsuccessful connections reached, exiting")
 				os._exit(0)
 			time.sleep(1)
 			logging.debug(e)
@@ -560,7 +560,7 @@ elif args.passive:
 	if args.devicelistfile:
 		#import configparser
 		if not os.path.exists(args.devicelistfile):
-			print ("Error specified device list file '",args.devicelistfile,"' not found")
+			print ("Error: specified device list file '",args.devicelistfile,"' not found")
 			os._exit(1)
 		sensors = configparser.ConfigParser()
 		sensors.read(args.devicelistfile)
@@ -589,7 +589,7 @@ elif args.passive:
 	try:
 		sock = bluez.hci_open_dev(dev_id)
 	except:
-		print("Cannot open bluetooth device %i" % dev_id)
+		print("Error: cannot open bluetooth device %i" % dev_id)
 		raise
 
 	enable_le_scan(sock, filter_duplicates=False)
@@ -599,8 +599,8 @@ elif args.passive:
 
 		def decode_data_atc(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "161a18"
-			paketStart = data_str.find(preeamble)
-			offset = paketStart + len(preeamble)
+			packetStart = data_str.find(preeamble)
+			offset = packetStart + len(preeamble)
 			strippedData_str = data_str[offset:offset+26] #if shorter will just be shorter then 13 Bytes
 			strippedData_str = data_str[offset:] #if shorter will just be shorter then 13 Bytes
 			macStr = mac.replace(":","").upper()
@@ -612,7 +612,7 @@ elif args.passive:
 				if len(strippedData_str) == 30: #custom format, next-to-last ist adv number
 					advNumber = strippedData_str[-4:-2]
 				else:
-					advNumber = strippedData_str[-2:] #last data in paket is adv number
+					advNumber = strippedData_str[-2:] #last data in packet is adv number
 				if macStr in advCounter:
 					lastAdvNumber = advCounter[macStr]
 				else:
@@ -663,7 +663,7 @@ elif args.passive:
 							else:
 								print("Warning: No key provided for sensor:", mac,"\n")
 								return
-					else: #no fitting paket
+					else: #no fitting packet
 						return
 
 				else: #Packet is just repeated
@@ -679,8 +679,8 @@ elif args.passive:
 		# Tested with Qingping CGG1 and CGDK2
 		def decode_data_qingping(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "cdfd88"
-			paketStart = data_str.find(preeamble)
-			offset = paketStart + len(preeamble)
+			packetStart = data_str.find(preeamble)
+			offset = packetStart + len(preeamble)
 			strippedData_str = data_str[offset:offset+32]
 			macStr = mac.replace(":","").upper()
 			dataIdentifier = data_str[(offset-2):offset].upper()
@@ -698,10 +698,10 @@ elif args.passive:
 				return measurement
 
 		def le_advertise_packet_handler(mac, adv_type, data, rssi):
-			global lastBLEPaketReceived
+			global lastBLEPacketReceived
 			if args.watchdogtimer:
-				lastBLEPaketReceived = time.time()
-			lastBLEPaketReceived = time.time()
+				lastBLEPacketReceived = time.time()
+			lastBLEPacketReceived = time.time()
 			data_str = raw_packet_to_str(data)
 
 			global measurements
