@@ -45,8 +45,6 @@ sudo apt install bluetooth libbluetooth-dev pycryptodomex
 pip3 install pybluez
 ```
 
-Because of a bug in pycryptodomex you need `pip3 install pycryptodomex==3.11` to install older version for Raspberry PI Zero W, see https://github.com/JsBergbau/MiTemperature2/issues/104.
-
 Bluetooth LE Scanning needs root. To run the script for AT with normal user rights, please execute
 ```
 sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)
