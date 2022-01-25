@@ -663,7 +663,7 @@ elif args.passive:
 							else:
 								print("Warning: No key provided for sensor:", mac,"\n")
 								return
-						else
+						else:
 							return #repeated packet
 					else: #no fitting packet
 						return
