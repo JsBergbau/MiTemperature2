@@ -6,6 +6,39 @@ By default this sensor doesn't transmit its values in the advertisement data, li
 
 Once you're connected to the LYWSD03MMC it advertises its values about every 6 seconds, so about 10 temperature/humidity readings per minute.
 
+
+## Table of Contents
+
+-   [Read data from Xiaomi Mijia LYWSD03MMC Bluetooth 4.2 Temperature Humidity sensor](#read-data-from-xiaomi-mijia-lywsd03mmc-bluetooth-42-temperature-humidity-sensor)
+    -   [Table of Contents](#table-of-contents)
+    -   [Supported sensors](#supported-sensors)
+    -   [Prequisites / Requirements](#prequisites--requirements)
+        -   [Requirements for reading sensors in passive
+            mode](#requirements-for-reading-sensors-in-passive-mode)
+    -   [Usage](#usage)
+        -   [Passive Mode Usage](#passive-mode-usage)
+    -   [Built in MQTT support](#built-in-mqtt-support)
+    -   [Tips](#tips)
+        -   [Debouncing](#debouncing)
+        -   [Minus degrees](#minus-degrees)
+        -   [High battery usage (not applicable for recommended passive
+            mode)](#high-battery-usage-not-applicable-for-recommended-passive-mode)
+    -   [Sample output](#sample-output)
+        -   [Sample output passive mode](#sample-output-passive-mode)
+        -   [More info](#more-info)
+        -   [Troubleshooting](#troubleshooting)
+    -   [Calibration](#calibration)
+        -   [Offset calibration](#offset-calibration)
+        -   [Two point calibration](#two-point-calibration)
+    -   [Callback for processing the
+        data](#callback-for-processing-the-data)
+    -   [Send metrics to Prometheus](#send-metrics-to-prometheus)
+    -   [Node-RED flows](#node-red-flows)
+    -   [Callback to Home-Assistant MQTT
+        integration](#callback-to-home-assistant-mqtt-integration)
+        -   [Home-Assistant device
+            details:](#home-assistant-device-details)
+
 ## Supported sensors
 
 This script was originally made to support LYWSD03MMC devices running Xiaomi firmware but support for other hardware and firmware was added later.
