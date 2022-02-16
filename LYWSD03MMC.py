@@ -53,6 +53,7 @@ class Measurement:
 measurements=deque()
 #globalBatteryLevel=0
 previousMeasurements={}
+previousCallbacks={}
 identicalCounters={}
 MQTTClient=None
 MQTTTopic=None
@@ -101,19 +102,29 @@ def watchDog_Thread():
 
 def thread_SendingData():
 	global previousMeasurements
+	global previousCallbacks
 	global measurements
 	path = os.path.dirname(os.path.abspath(__file__))
-
 
 	while True:
 		try:
 			mea = measurements.popleft()
+			invokeCallback = True
+
+			if mea.sensorname in previousCallbacks:
+				if args.callback_interval > 0 and (int(time.time()) - previousCallbacks[mea.sensorname] < args.callback_interval):
+					print("Callback for " + mea.sensorname + " would be within interval; don't invoke callback\n")
+					invokeCallback = False
+
+
 			if mea.sensorname in previousMeasurements:
 				prev = previousMeasurements[mea.sensorname]
 				if (mea == prev and identicalCounters[mea.sensorname] < args.skipidentical): #only send data when it has changed or X identical data has been skipped, ~10 packets per minute, 50 packets --> writing at least every 5 minutes
 					print("Measurements for " + mea.sensorname + " are identical; don't send data\n")
 					identicalCounters[mea.sensorname]+=1
-					continue
+					invokeCallback = False
+
+			if invokeCallback == False: continue
 
 			if args.callback:
 				fmt = "sensorname,temperature,humidity,voltage" #don't try to separate by semicolon ';' os.system will use that as command separator
@@ -163,6 +174,7 @@ def thread_SendingData():
 			else: #data was sent
 				previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
 				identicalCounters[mea.sensorname]=0
+				previousCallbacks[mea.sensorname]=int(time.time())
 
 		except IndexError:
 			#print("No Data")
@@ -347,6 +359,7 @@ callbackgroup.add_argument("--callback","-call", help="Pass the path to a progra
 callbackgroup.add_argument("--httpcallback","-http", help="Pass the URL to a program/script that will be called on each new measurement")
 callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported to the callback script")
 callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
+callbackgroup.add_argument("--callback-interval","-int", help="Only invoke callbackfunction every N seconds, e.g. 600 = 10 minutes",type=int, default=0)
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
 
 passivegroup = parser.add_argument_group("Passive mode related arguments")
