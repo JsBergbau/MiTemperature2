@@ -70,7 +70,7 @@ usage: LYWSD03MMC.py [-h] [--device AA:BB:CC:DD:EE:FF] [--battery ]
                      [--calpoint1 CALPOINT1] [--offset1 OFFSET1]
                      [--calpoint2 CALPOINT2] [--offset2 OFFSET2]
                      [--callback CALLBACK] [--httpcallback HTTPCALLBACK] [--name NAME] [--skipidentical N]
-                     [--influxdb N] [--passive] [--watchdogtimer X]
+                     [--callback-interval N] [--influxdb N] [--passive] [--watchdogtimer X]
                      [--devicelistfile DEVICELISTFILE] [--onlydevicelist]
                      [--rssi]
 
@@ -114,6 +114,8 @@ Callback related arguments:
   --name NAME, -n NAME  Give this sensor a name reported to the callback script
   --skipidentical N, -skip N
                         N consecutive identical measurements won't be reported to callbackfunction
+  --callback-interval N, -int N
+                        Only invoke callbackfunction every N seconds, e.g. 600 = 10 minutes
   --influxdb N, -infl N
                         Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization
 
@@ -641,6 +643,8 @@ Example
 This will call the script at the given URL and fill in the formatted values. Just like the built in MQTT support this is less expensive than executing a script via the --callback option every time a measurement is received. Supported values are: sensorname, temperature, humidity, voltage, humidityCalibrated, batteryLevel, rssi, timestamp.
 
 There is an option not to report identical data to the callback. To distinguish between a failure and constantly the same values are read, the option takes the number after which identical measurements the data is reportet to the callback. Use the `--skipidentical N` for this. E.g. `--skipidentical 1` means 1 identical measurement is skipped, so only every second identical measurement is reportet to callback. I recommend numbers between 10 and 50, giving at least every minute respectively 5 minutes a call to the callback script (With 10 and 50 the actual time is slightly higher than 1 respectively 5 minutes). It is recommended to use the `--round` and `--debounce` option, otherwise there is a lot of noise with changing the temperature. See https://github.com/JsBergbau/MiTemperature2/issues/2
+  
+Another option to reduce the number of callbacks is the use of the `--callback-interval N` parameter. Using callback functions on low end hardware (e.g. a Raspberry Pi Zero) can cause high cpu usages. This parameter limits the number of invoked callbacks. When you set this to 600, the callback function will not be invoked within 600 seconds from the previous callback.
 
 All data received from the sensor is stored in a list and transmitted sequentially. This means if your backend like influxdb is not reachable when a new measurement is received, it will be tried again later (currently waiting 5 seconds before the next try). Thus no data is lost when your storage engine has some trouble. There is no upper limit (the only limit should be the RAM). Keep this in mind when specifing a wrong backend.
 
