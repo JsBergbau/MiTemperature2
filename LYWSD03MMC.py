@@ -113,7 +113,7 @@ def thread_SendingData():
 
 			if mea.sensorname in previousCallbacks:
 				if args.callback_interval > 0 and (int(time.time()) - previousCallbacks[mea.sensorname] < args.callback_interval):
-					print("Callback for " + mea.sensorname + " would be within interval; don't invoke callback\n")
+					print("Callback for " + mea.sensorname + " would be within interval (" + str(int(time.time()) - previousCallbacks[mea.sensorname]) + " < " + str(args.callback_interval) + "); don't invoke callback\n")
 					invokeCallback = False
 
 
@@ -124,55 +124,58 @@ def thread_SendingData():
 					identicalCounters[mea.sensorname]+=1
 					invokeCallback = False
 
-			if args.callback and invokeCallback:
-				fmt = "sensorname,temperature,humidity,voltage" #don't try to separate by semicolon ';' os.system will use that as command separator
-				if ' ' in mea.sensorname:
-					sensorname = '"' + mea.sensorname + '"'
-				else:
-					sensorname = mea.sensorname
-				params = sensorname + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
-				if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
-					fmt +=",humidityCalibrated"
-					params += " " + str(mea.calibratedHumidity)
-				if (args.battery):
-					fmt +=",batteryLevel"
-					params += " " + str(mea.battery)
-				if (args.rssi):
-					fmt +=",rssi"
-					params += " " + str(mea.rssi)
-				params += " " + str(mea.timestamp)
-				fmt +=",timestamp"
-				cmd = path + "/" + args.callback + " " + fmt + " " + params
-				print(cmd)
-				ret = os.system(cmd)
+			if invokeCallback:
 
-			if args.httpcallback and invokeCallback:
-				url = args.httpcallback.format(
-					sensorname=mea.sensorname,
-					temperature=mea.temperature,
-					humidity=mea.humidity,
-					voltage=mea.voltage,
-					humidityCalibrated=mea.calibratedHumidity,
-					batteryLevel=mea.battery,
-					rssi=mea.rssi,
-					timestamp=mea.timestamp,
-				)
-				print(url)
-				ret = 0
-				try:
-					r = requests.get(url, verify=False, timeout=1)
-					r.raise_for_status()
-				except requests.exceptions.RequestException as e:
-					ret = 1
+				if args.callback:
+					fmt = "sensorname,temperature,humidity,voltage" #don't try to separate by semicolon ';' os.system will use that as command separator
+					if ' ' in mea.sensorname:
+						sensorname = '"' + mea.sensorname + '"'
+					else:
+						sensorname = mea.sensorname
+					params = sensorname + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
+					if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
+						fmt +=",humidityCalibrated"
+						params += " " + str(mea.calibratedHumidity)
+					if (args.battery):
+						fmt +=",batteryLevel"
+						params += " " + str(mea.battery)
+					if (args.rssi):
+						fmt +=",rssi"
+						params += " " + str(mea.rssi)
+					params += " " + str(mea.timestamp)
+					fmt +=",timestamp"
+					cmd = path + "/" + args.callback + " " + fmt + " " + params
+					print(cmd)
+					ret = os.system(cmd)
 
-			if (ret != 0):
+				if args.httpcallback:
+					url = args.httpcallback.format(
+						sensorname=mea.sensorname,
+						temperature=mea.temperature,
+						humidity=mea.humidity,
+						voltage=mea.voltage,
+						humidityCalibrated=mea.calibratedHumidity,
+						batteryLevel=mea.battery,
+						rssi=mea.rssi,
+						timestamp=mea.timestamp,
+					)
+					print(url)
+					ret = 0
+					try:
+						r = requests.get(url, verify=False, timeout=1)
+						r.raise_for_status()
+					except requests.exceptions.RequestException as e:
+						ret = 1
+
+				if ret != 0:
 					measurements.appendleft(mea) #put the measurement back
 					print ("Data couln't be send to Callback, retrying...")
 					time.sleep(5) #wait before trying again
-			else: #data was sent
-				previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
-				identicalCounters[mea.sensorname]=0
-				previousCallbacks[mea.sensorname]=int(time.time())
+				else: #data was sent
+					previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
+					identicalCounters[mea.sensorname]=0
+					previousCallbacks[mea.sensorname]=int(time.time())
+
 
 		except IndexError:
 			#print("No Data")
