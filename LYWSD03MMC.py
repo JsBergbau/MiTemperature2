@@ -124,9 +124,7 @@ def thread_SendingData():
 					identicalCounters[mea.sensorname]+=1
 					invokeCallback = False
 
-			if invokeCallback == False: continue
-
-			if args.callback:
+			if args.callback and invokeCallback:
 				fmt = "sensorname,temperature,humidity,voltage" #don't try to separate by semicolon ';' os.system will use that as command separator
 				if ' ' in mea.sensorname:
 					sensorname = '"' + mea.sensorname + '"'
@@ -148,7 +146,7 @@ def thread_SendingData():
 				print(cmd)
 				ret = os.system(cmd)
 
-			if args.httpcallback:
+			if args.httpcallback and invokeCallback:
 				url = args.httpcallback.format(
 					sensorname=mea.sensorname,
 					temperature=mea.temperature,
