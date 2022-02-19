@@ -738,6 +738,9 @@ elif args.passive:
 					measurement.temperature=round(measurement.temperature,1)
 					measurement.humidity=round(measurement.humidity,1)
 
+				if mac in sensors and "sensorname" in sensors[mac]:
+					print("Sensorname:",  sensors[mac]["sensorname"])
+
 				print("Temperature: ", measurement.temperature)
 				print("Humidity: ", measurement.humidity)
 				if measurement.voltage != None:
@@ -752,10 +755,10 @@ elif args.passive:
 					except:
 						measurement.sensorname = mac
 					if "offset1" in sensors[mac] and "offset2" in sensors[mac] and "calpoint1" in sensors[mac] and "calpoint2" in sensors[mac]:
-						measurement.humidity = calibrateHumidity2Points(humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
+						measurement.humidity = calibrateHumidity2Points(measurement.humidity,int(sensors[mac]["offset1"]),int(sensors[mac]["offset2"]),int(sensors[mac]["calpoint1"]),int(sensors[mac]["calpoint2"]))
 						print ("Humidity calibrated (2 points calibration): ", measurement.humidity)
 					elif "humidityOffset" in sensors[mac]:
-						measurement.humidity = humidity + int(sensors[mac]["humidityOffset"])
+						measurement.humidity = measurement.humidity + int(sensors[mac]["humidityOffset"])
 						print ("Humidity calibrated (offset calibration): ", measurement.humidity)
 					if "topic" in sensors[mac]:
 						currentMQTTTopic=sensors[mac]["topic"]
