@@ -1,0 +1,132 @@
+zabbix_export:
+  version: '6.0'
+  date: '2022-03-27T21:00:48Z'
+  groups:
+    -
+      uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    -
+      uuid: d9debf65f58141a8ae09d6d87dad3b5c
+      template: trapper.mitemperature2
+      name: trapper.mitemperature2
+      groups:
+        -
+          name: Templates
+      items:
+        -
+          uuid: 70e54948a8924d1a8a175e0a1aea48b7
+          name: 'Sensor - Battery - Level'
+          type: TRAP
+          key: MiTemperature2.battery_level
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '300'
+          triggers:
+            -
+              uuid: e4bfa31cccae490cac0840e92def4b07
+              expression: 'max(/trapper.mitemperature2/MiTemperature2.battery_level,900)<{$BATTERY_LEVEL_MIN}'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'min(/trapper.mitemperature2/MiTemperature2.battery_level,900)>{$BATTERY_LEVEL_MIN}'
+              name: 'Battery level < {$BATTERY_LEVEL_MIN}%'
+              priority: WARNING
+            -
+              uuid: b79d0cdfccfe4cd4a5d215ba3997e6f8
+              expression: 'nodata(/trapper.mitemperature2/MiTemperature2.battery_level,{$NODATA_DELAY:battery_level})=1'
+              name: 'Missing data - battery level'
+              priority: WARNING
+        -
+          uuid: ec0e2009c76448c8a1b9b3cb8c0cb114
+          name: 'Sensor - Battery - Voltage'
+          type: TRAP
+          key: MiTemperature2.battery_voltage
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          units: V
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '300'
+          triggers:
+            -
+              uuid: df7d62e0eeb848b2ade6b5d577744f95
+              expression: 'nodata(/trapper.mitemperature2/MiTemperature2.battery_voltage,{$NODATA_DELAY:battery_voltage})=1'
+              name: 'Missing data - battery voltage'
+              priority: WARNING
+        -
+          uuid: e635c65ae1d24b09880413f785870331
+          name: 'Sensor - Humidity'
+          type: TRAP
+          key: MiTemperature2.humidity
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '300'
+          triggers:
+            -
+              uuid: fa180292fe044fbb8765ea413043c6b7
+              expression: 'nodata(/trapper.mitemperature2/MiTemperature2.humidity,{$NODATA_DELAY:humidity})=1'
+              name: 'Missing data - humidity'
+              priority: WARNING
+        -
+          uuid: 6b271c67ceda4b1ebdfd827104ad4f44
+          name: 'Sensor - Temperature'
+          type: TRAP
+          key: MiTemperature2.temperature
+          delay: '0'
+          history: 7d
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            -
+              type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - '300'
+          triggers:
+            -
+              uuid: 65138c7a29ad4c82ac9bf75aca5af711
+              expression: 'nodata(/trapper.mitemperature2/MiTemperature2.temperature,{$NODATA_DELAY:temperature})=1'
+              name: 'Missing data - temperature'
+              priority: WARNING
+      macros:
+        -
+          macro: '{$BATTERY_LEVEL_MIN}'
+          value: '20'
+          description: 'Minimum battery level'
+        -
+          macro: '{$NODATA_DELAY}'
+          value: '900'
+          description: 'Seconds of delay for sensor nodata triggers'
+  graphs:
+    -
+      uuid: 304656eb8cf64917a0c778518595b241
+      name: 'Temperature & Humidity'
+      graph_items:
+        -
+          drawtype: FILLED_REGION
+          color: 29B6F6
+          yaxisside: RIGHT
+          item:
+            host: trapper.mitemperature2
+            key: MiTemperature2.humidity
+        -
+          sortorder: '1'
+          drawtype: BOLD_LINE
+          color: F63100
+          item:
+            host: trapper.mitemperature2
+            key: MiTemperature2.temperature
+
