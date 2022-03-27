@@ -685,7 +685,11 @@ All data received from the sensor is stored in a list and transmitted sequential
 
 ## Send metrics to Prometheus
 
-[Read instruction about integartion with Prometheus Push Gateway](./prometheus/README.md)
+[Read instruction about integration with Prometheus Push Gateway](./prometheus/README.md)
+
+## Send metrics to Zabbix
+
+[Read instruction about integration with Zabbix](sendToZabbix.README.md)
 
 ## Node-RED flows
 Finally there are flows for Node-RED. Especially if you have multiple receivers this is quite comfortable to manage the name and calibration data of your sensors at one place in Node-Red. No need to change configuration in any of your receivers. Note: If you use encrypted mode you need to provide the decryption key in a device list file on every receiver. Tip: Use Ansible to deploy updated lists on all receivers.
