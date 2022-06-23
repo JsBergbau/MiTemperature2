@@ -1,33 +1,32 @@
+# Docker image
 
-# Raspberry pi zero docker image
-
-It might be difficult and/or tedious to install all prereqs on a pi zero.
-(and Python 3.7 is long to build from sources compiling on the pi zero).
-
-I've been willing to try docker on the pi zero as a way to "easyly" move applications/functions from one pi to another without needing to care (as much as possible) of all the prerequisits and potentially conflicting other apps.
+It's pretty straightforward to run the script using the dockerfile provided here.
 
 #Usage:
 
-## Building the docker image from base image (base image based on stretch + python 3)
+## Building the docker image
 
-I published the base image as xavierrrr/xrrzero:stretchpython3.7 in dockerhub. 
+Run the following docker build command from the project root directory
 
-Run the following docker build command from project root directory
+Docker needs to be running as root due to the dependencies of the project so if you use rootless docker, you may need to use `sudo` for each docker command.
 
 ```
-docker build -t mitemperature2localimage -f docker/Dockerfile .
+docker build -t mitemperature2 -f docker/Dockerfile .
 ```
-
-**Update the Dockerfile with you sensor mac adress**
-
-**Update the LYWSD03MMC.py command line for your use. The default file will invoke a simple callback python programs that is updating a vera verde box with sensor data.**
 
 ## Starting the docker image
+
 ```
-sudo docker run --net=host -d -i -t mitemperature2localimage
+docker run --net=host --privileged -it mitemperature2 <parameters>
 ```
 
-# Pi Zero Docker installation on a frech stretch/buster installation
+Example:
+
+```
+docker run --net=host --privileged -it mitemperature2 -a --devicelistfile /app/sensors.ini --mqttconfigfile /app/mqtt.conf
+```
+
+# Raspberry Pi Docker installation
 
 **I'm putting this here for quick reference**
 
