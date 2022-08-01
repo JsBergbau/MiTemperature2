@@ -82,6 +82,8 @@ Bluetooth LE Scanning needs root. To run the script for AT with normal user righ
 ```
 sudo setcap cap_net_raw,cap_net_admin+eip $(eval readlink -f `which python3`)
 ```
+Hint: When using python virtual environment do this in your venv.    
+    
 After a Python upgrade, you have to redo the above step.
 
 ## Usage
