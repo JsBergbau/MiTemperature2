@@ -177,7 +177,12 @@ With the `--interface` option you specify the number of the bluetooth adapter to
 With `--influxdb 1` you can use a influxdb optimized output. In this mode a timestamp with the current data is sent every 10 seconds to influxdb. Or technically speaking, each received measurement is snapped to a grid of 10 seconds. Don't use this feature together with `--skipidentical` otherwise it won't help. To use RLE compression for timestamps influxdb requires all 1000 timestamps which are mostly in a block to have the same interval. Only one missing timestamp leads to s8b compression for timestamps. Since influxdb handles identical values very efficiently you save much more space by writing every 10 seconds instead of skipping identical values. Without RLE 1000 timestamps needed about 1129 Bytes of data in my measurement. With RLE its only 12 Byte. Of course there are now more measurements stored in influxdb, but still overall size in influxdb is still lower. Depends also environment, of course. With a very steady environment and very seldom writing identical valus then size in influxdb would be smaller not writing every 10 seconds, of course. Integer optimizsation `--influxdb 2`is not implemented yet.
 
 `--unreachable-count N, -urc N` Use this option when you want to exit your script after collection the measurement but your sensor is somehow not reachable. Then after the specified number of failed connection tries the script will exit.
-
+    
+### Startup script start.sh
+    
+There is a startup script `start.sh`. You can configure your prefered options there. It is highly recommended using this, since in next major release it is planned to rename `LYWSD03MMC.py` to `MiTemperature2.py`.
+You can also use this script when using python virtual environment. Uncomment the line `#source bin/activate` and it will start in your venv.
+    
 ### Passive Mode Usage
 
 Thanks to https://github.com/atc1441/ATC_MiThermometer and https://github.com/pvvx/ATC_MiThermometer there is an alternative firmware which sends out the measurements as Bluetooth Low Energy Advertisements. In this mode you don't have to connect to the sensor. This saves a lot of power, especially in cases where the signal strength is low, see https://github.com/JsBergbau/MiTemperature2/issues/32.
