@@ -30,6 +30,7 @@ Once you're connected to the LYWSD03MMC it advertises its values about every 6 s
     -   [Calibration](#calibration)
         -   [Offset calibration](#offset-calibration)
         -   [Two point calibration](#two-point-calibration)
+    -   [Docker usage](#docker-usage)
     -   [Callback for processing the
         data](#callback-for-processing-the-data)
     -   [Send metrics to Prometheus](#send-metrics-to-prometheus)
@@ -50,6 +51,8 @@ Normal (active connection) device support: LYWSD03MMC
 Qingping format advertisements are supported so it's possible this script also supports advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
 
 ## Prequisites / Requirements
+
+This is not needed if you are using the docker image. See [Docker usage](#docker-usage)
 
 You need Python3 3.7 or above because of the dataclasses used in the Callback Function. If you don't have Python 3.7 please take the previous version from here https://raw.githubusercontent.com/JsBergbau/MiTemperature2/5d7b215d7b22d4c21d9244f8a4102513b928f2c7/LYWSD03MMC.py. This version is a bit behind and connection error handling has a bug. If you really need this script, please open and issue and I'll post a new bugfree version.
 
@@ -654,6 +657,13 @@ Humidity: 54
 Battery voltage: 2.944
 Calibrated humidity: 49
 
+```
+
+## Docker usage
+There is a docker image available on dockerhub you can use. See https://docs.docker.com/engine/install/debian/ for instructions on how to install docker on raspberry pi.   
+Once this is installed, you can create a sensors.ini and mqtt.conf file on the host machine and use this to run the container using the these files
+```
+docker run --net=host --privileged -it -v $(pwd)/sensors.ini:/app/sensors.ini -v $(pwd)/mqtt.conf:/app/mqtt.conf  antxxxx/mitemperature2 -a --devicelistfile /app/sensors.ini --mqttconfigfile /app/mqtt.conf
 ```
 
 ## Callback for processing the data
