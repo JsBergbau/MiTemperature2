@@ -1,16 +1,11 @@
-FROM python:3.9
+FROM python:3.9-slim
 
-RUN apt-get update
-
-RUN apt-get -y install python3-pip libglib2.0-dev libbluetooth-dev bluetooth
-
-RUN pip3 install bluepy
-RUN pip3 install requests
-# pybluez wont compile with the newer version
-RUN pip3 install --upgrade setuptools==57.5.0
-RUN pip3 install pybluez
-RUN pip3 install pycryptodomex
-RUN pip3 install paho-mqtt
+# pybluez wont compile with the newer version of setuptools so use fixed version
+RUN apt update && \
+ apt -y upgrade && \
+ apt -y install python3-pip libglib2.0-dev libbluetooth-dev bluetooth && \
+ pip3 install --upgrade setuptools==57.5.0 && \
+ pip3 install bluepy requests pybluez pycryptodomex paho-mqtt
 
 COPY . /app
 
