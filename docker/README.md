@@ -26,6 +26,12 @@ Example:
 docker run --net=host --privileged -it mitemperature2 -a --devicelistfile /app/sensors.ini --mqttconfigfile /app/mqtt.conf
 ```
 
+You can use this to run with sensors.ini and mqtt.conf on the host machine rather than having to use the versions in the docker repository
+
+```
+docker run --net=host --privileged -it -v $(pwd)/sensors.ini:/app/sensors.ini -v $(pwd)/mqtt.conf:/app/mqtt.conf  mitemperature2 -a --devicelistfile /app/sensors.ini --mqttconfigfile /app/mqtt.conf
+```
+
 # Raspberry Pi Docker installation
 
 **I'm putting this here for quick reference**
