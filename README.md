@@ -44,11 +44,13 @@ Once you're connected to the LYWSD03MMC it advertises its values about every 6 s
 
 This script was originally made to support LYWSD03MMC devices running Xiaomi firmware but support for other hardware and firmware was added later.
 
-Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2
+Passive mode (recommended) device support: LYWSD03MMC, MHO-C401, CGG1-M, CGGDK2, LYWSDCGQ
 
 Normal (active connection) device support: LYWSD03MMC
 
 Qingping format advertisements are supported so it's possible this script also supports advertisements sent by other types of Qingping CGG* devices but this is not tested. CGG1-M (Mijia version) devices can also run custom ATC firmware by pvvx. Then they behave exactly the same as LYWSD03MMCs running custom firmware. Qingping sensors only send Qingping format advertisements when running the original Qingping firmware.
+
+LYWSDCGQ format (the old round one with an aaa battery) is supported. The sensor can send four types of advertisements: 1) both temperature and humidity, 2) only temperature, 3) only humidity and 4) only battery. All of these are supported. The missing values are 0 for the callback, so this needs to be handled in the callback script implementation. There are roughly about 20 advertisements with both temperature and humidity per minute and about two single information advertisements per minute for each information, temperature, humidity and battery.
 
 ## Prequisites / Requirements
 
