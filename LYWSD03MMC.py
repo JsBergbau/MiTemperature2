@@ -692,6 +692,49 @@ elif args.passive:
 				measurement.rssi = rssi
 				return measurement
 
+		def decode_data_lywsdcgq(mac, adv_type, data_str, rssi, measurement):
+			preeamble = "5020aa01"
+			packetStart = data_str.find(preeamble)
+			offset = packetStart + len(preeamble)
+			strippedData_str = data_str[offset:offset+28]
+			strippedData_str = data_str[offset:]
+			macStr = mac.replace(":","").upper()
+			dataIdentifier = data_str[(offset+14):(offset+16)].upper()
+
+			if(dataIdentifier == "0D") and not args.onlydevicelist or (dataIdentifier == "0D" and mac in sensors) and len(strippedData_str) == 28:
+				print("BLE packet - lywsdcgq 0D: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+				temperature = int.from_bytes(bytearray.fromhex(strippedData_str[20:24]),byteorder='little',signed=True) / 10.
+				humidity = int.from_bytes(bytearray.fromhex(strippedData_str[24:28]),byteorder='little',signed=True) / 10.
+
+				measurement.humidity = humidity
+				measurement.temperature = temperature
+				measurement.rssi = rssi
+				return measurement
+
+			elif(dataIdentifier == "06") and not args.onlydevicelist or (dataIdentifier == "06" and mac in sensors) and len(strippedData_str) == 24:
+				print("BLE packet - lywsdcgq 06: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+				humidity = int.from_bytes(bytearray.fromhex(strippedData_str[20:24]),byteorder='little',signed=True) / 10.
+
+				measurement.humidity = humidity
+				measurement.rssi = rssi
+				return measurement
+
+			elif(dataIdentifier == "04") and not args.onlydevicelist or (dataIdentifier == "04" and mac in sensors) and len(strippedData_str) == 24:
+				print("BLE packet - lywsdcgq 04: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+				temperature = int.from_bytes(bytearray.fromhex(strippedData_str[20:24]),byteorder='little',signed=True) / 10.
+
+				measurement.temperature = temperature
+				measurement.rssi = rssi
+				return measurement
+
+			elif(dataIdentifier == "0A") and not args.onlydevicelist or (dataIdentifier == "0A" and mac in sensors) and len(strippedData_str) == 22:
+				print("BLE packet - lywsdcgq 0A: %s %02x %s %d" % (mac, adv_type, data_str, rssi))
+				batteryPercent = int.from_bytes(bytearray.fromhex(strippedData_str[20:22]),byteorder='little',signed=False)
+
+				measurement.battery = batteryPercent
+				measurement.rssi = rssi
+				return measurement
+
 		# Tested with Qingping CGG1 and CGDK2
 		def decode_data_qingping(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "cdfd88"
@@ -724,6 +767,8 @@ elif args.passive:
 			measurement = Measurement(0,0,0,0,0,0,0,0)
 			measurement = (
 				decode_data_atc(mac, adv_type, data_str, rssi, measurement)
+				or
+				decode_data_lywsdcgq(mac, adv_type, data_str, rssi, measurement)
 				or
 				decode_data_qingping(mac, adv_type, data_str, rssi, measurement)
 			)
