@@ -614,6 +614,8 @@ elif args.passive:
 		def decode_data_atc(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "161a18"
 			packetStart = data_str.find(preeamble)
+			if (packetStart == -1):
+				return
 			offset = packetStart + len(preeamble)
 			strippedData_str = data_str[offset:offset+26] #if shorter will just be shorter then 13 Bytes
 			strippedData_str = data_str[offset:] #if shorter will just be shorter then 13 Bytes
@@ -695,6 +697,8 @@ elif args.passive:
 		def decode_data_lywsdcgq(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "5020aa01"
 			packetStart = data_str.find(preeamble)
+			if (packetStart == -1):
+				return
 			offset = packetStart + len(preeamble)
 			strippedData_str = data_str[offset:offset+28]
 			strippedData_str = data_str[offset:]
@@ -739,6 +743,8 @@ elif args.passive:
 		def decode_data_qingping(mac, adv_type, data_str, rssi, measurement):
 			preeamble = "cdfd88"
 			packetStart = data_str.find(preeamble)
+			if (packetStart == -1):
+				return
 			offset = packetStart + len(preeamble)
 			strippedData_str = data_str[offset:offset+32]
 			macStr = mac.replace(":","").upper()
