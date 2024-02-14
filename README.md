@@ -70,11 +70,9 @@ install via
 Debian/Raspbian 12 Bookworm additionally (necessary to install bluepy):  
 `sudo apt install libglib2.0-dev`
 
-`pip3 install bluepy requests`
-
 If you use integrated MQTT client paho-mqtt is needed. Install via
 
-`pip3 install paho-mqtt`
+`pip3 install 'paho-mqtt<2.0.0'` (make sure to have the apostrophes `'` present)
 
 Instead of `pip3` it may be just `pip`, depeding of your installation.
 
