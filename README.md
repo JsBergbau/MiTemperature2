@@ -85,6 +85,7 @@ Additional requirements if you want to use passive mode. If you don't use passiv
 sudo apt install bluetooth libbluetooth-dev 
 pip3 install pybluez pycryptodomex
 ```
+On Debian 12 Bookworm you might get the error `error in PyBluez setup command: use_2to3 is invalid.` You can install it then with `pip3 install git+https://github.com/pybluez/pybluez.git#egg=pybluez`, source https://stackoverflow.com/a/75820681
 
 Bluetooth LE Scanning needs root. To run the script for AT with normal user rights, please execute
 ```
