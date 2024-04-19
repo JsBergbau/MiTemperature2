@@ -46,3 +46,8 @@ ${ZBX_HOST} MiTemperature2.battery_voltage ${BATTERY_VOLTAGE}
 ${ZBX_HOST} MiTemperature2.humidity ${HUMIDITY}
 ${ZBX_HOST} MiTemperature2.temperature ${TEMPERATURE}" | zabbix_sender -z ${ZBX_ADDRESS} -p ${ZBX_PORT} -s - -i - ${TLS_PARAMS[@]}
 
+#added next section just to see actual values in docker logs
+echo -e "${ZBX_HOST} battery_level ${BATTERY_LEVEL}
+${ZBX_HOST} battery_voltage ${BATTERY_VOLTAGE}
+${ZBX_HOST} humidity ${HUMIDITY}
+${ZBX_HOST} temperature ${TEMPERATURE}\n"

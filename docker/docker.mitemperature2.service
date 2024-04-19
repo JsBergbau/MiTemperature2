@@ -1,0 +1,23 @@
+[Unit]
+Description=MiTemperature2
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStart=/usr/bin/docker run --rm --name %n \
+--net=host \
+--privileged \
+-v /opt/MiTemperature2/sensors.ini:/app/sensors.ini \
+-v /opt/MiTemperature2/sendToZabbix.sh:/app/sendToZabbix.sh \
+mitemperature2 \
+-a \
+--devicelistfile /app/sensors.ini \
+--onlydevicelist \
+--battery \
+--callback sendToZabbix.sh
+ExecStop=/usr/bin/docker container stop %n
+
+[Install]
+WantedBy=default.target

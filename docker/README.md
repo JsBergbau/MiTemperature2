@@ -46,6 +46,15 @@ systemctl start docker.service
 docker info
 ```
 
+# Using docker container as service
+Simply copy docker.mitemperature2.service to /etc/systemd/system/ and then register it:
+```
+systemctl enable docker.mitemperature2
+systemctl start docker.mitemperature2
+```
+
+
+
 # Cross compiling docker image and pushing to dockerhub
 
 Follow this to set up and build dockerimage for multi arch. This can be done on an amd64 machine which is faster than building on a raspberry pi.   
