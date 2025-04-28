@@ -81,7 +81,7 @@ Instead of `pip3` it may be just `pip`, depeding of your installation.
 Additional requirements if you want to use passive mode. If you don't use passive mode, please ignore this section.
 ```
 sudo apt install bluetooth libbluetooth-dev 
-pip3 install pybluez pycryptodomex
+pip3 install pybluez bluepy pycryptodomex
 ```
 On Debian 12 Bookworm you might get the error `error in PyBluez setup command: use_2to3 is invalid.` You can install it then with `pip3 install git+https://github.com/pybluez/pybluez.git#egg=pybluez`, source https://stackoverflow.com/a/75820681
 
