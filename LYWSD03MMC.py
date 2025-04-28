@@ -57,17 +57,21 @@ previousCallbacks={}
 identicalCounters={}
 MQTTClient=None
 MQTTTopic=None
+MQTTTopicPrefix=None
 receiver=None
 subtopics=None
 mqttJSONDisabled=False
 
-def myMQTTPublish(topic,jsonMessage):
+def myMQTTPublish(topic,jsonMessage,topicPrefix=None):
 	global subtopics
+
+	prefix = ((topicPrefix + "/") if topicPrefix else "")
+
 	if len(subtopics) > 0:
 		messageDict = json.loads(jsonMessage)
 		for subtopic in subtopics:
 			print("Topic:",subtopic)
-			MQTTClient.publish(topic + "/" + subtopic,messageDict[subtopic],0)
+			MQTTClient.publish(prefix + topic + "/" + subtopic,messageDict[subtopic],0)
 	if not mqttJSONDisabled:
 		MQTTClient.publish(topic,jsonMessage,1)
 
@@ -295,7 +299,7 @@ class MyDelegate(btle.DefaultDelegate):
 				if measurement.calibratedHumidity == 0:
 					measurement.calibratedHumidity = measurement.humidity
 				jsonString=buildJSONString(measurement)
-				myMQTTPublish(MQTTTopic,jsonString)
+				myMQTTPublish(MQTTTopic,jsonString,MQTTTopicPrefix)
 				#MQTTClient.publish(MQTTTopic,jsonString,1)
 
 
@@ -401,6 +405,7 @@ if args.mqttconfigfile:
 	username = mqttConfig["MQTT"]["username"]
 	password = mqttConfig["MQTT"]["password"]
 	MQTTTopic = mqttConfig["MQTT"]["topic"]
+	MQTTTopicPrefix = mqttConfig["MQTT"]["prefix"]
 	lastwill = mqttConfig["MQTT"]["lastwill"]
 	lwt = mqttConfig["MQTT"]["lwt"]
 	clientid=mqttConfig["MQTT"]["clientid"]
@@ -800,6 +805,7 @@ elif args.passive:
 				print ("Battery:", measurement.battery,"%")
 				
 				currentMQTTTopic = MQTTTopic
+				currentMQTTTopicPrefix = MQTTTopicPrefix
 				if mac in sensors:
 					try:
 						measurement.sensorname = sensors[mac]["sensorname"]
@@ -813,6 +819,8 @@ elif args.passive:
 						print ("Humidity calibrated (offset calibration): ", measurement.humidity)
 					if "topic" in sensors[mac]:
 						currentMQTTTopic=sensors[mac]["topic"]
+					if "prefix" in sensors[mac]:
+						currentMQTTTopic=sensors[mac]["prefix"]
 				else:
 					measurement.sensorname = mac
 				
@@ -824,7 +832,7 @@ elif args.passive:
 
 				if args.mqttconfigfile:
 					jsonString=buildJSONString(measurement)
-					myMQTTPublish(currentMQTTTopic,jsonString)
+					myMQTTPublish(currentMQTTTopic,jsonString,currentMQTTTopicPrefix)
 					#MQTTClient.publish(currentMQTTTopic,jsonString,1)
 
 				#print("Length:", len(measurements))
