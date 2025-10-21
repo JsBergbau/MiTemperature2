@@ -2,7 +2,7 @@
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
 print("---------------------------------------------")
-print("MiTemperature2 / ATC Thermometer version 6.0")
+print("MiTemperature2 / ATC Thermometer version 6.1")
 print("---------------------------------------------")
 
 readme="""
@@ -393,7 +393,9 @@ try:
 				i += 2
 
 				# Battery level (%)
-				if type_id == "11":
+				if type_id == "01":
+					if i + 2 > len(payload):
+						break
 					battery = int(payload[i:i+2], 16)
 					i += 2
 
@@ -414,6 +416,11 @@ try:
 					volt_raw = int.from_bytes(bytes.fromhex(payload[i:i+4]), byteorder="little", signed=False)
 					voltage = volt_raw / 1000.0
 					i += 4
+
+				else:
+					if i + 2 > len(payload):
+						break
+					i += 2
 
 				# else:
 				# 	# Unknown type, skip
