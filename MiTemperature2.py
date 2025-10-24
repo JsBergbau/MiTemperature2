@@ -1,4 +1,5 @@
-#!/usr/bin/env -S python3 -u
+#!/root/MiTemperature2/bin/python -u
+##!/usr/bin/env -S python3 -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 
 print("---------------------------------------------")
@@ -155,7 +156,7 @@ def thread_SendingData():
 
 				if ret != 0:
 					measurements.appendleft(mea) #put the measurement back
-					print ("Data couln't be send to Callback, retrying...")
+					print ("Data couldn't be send to callback, retrying...")
 					time.sleep(5) #wait before trying again
 				else: #data was sent
 					previousMeasurements[mea.sensorname]=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,mea.timestamp,mea.sensorname) #using copy or deepcopy requires implementation in the class definition
@@ -222,8 +223,8 @@ def MQTTOnDisconnect(client, userdata,rc):
 
 # Main loop --------
 parser=argparse.ArgumentParser(allow_abbrev=False,epilog=readme)
-parser.add_argument("--interface","-i", help="Specifiy the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
-parser.add_argument("--mqttconfigfile","-mcf", help="specify a configurationfile for MQTT-Broker")
+parser.add_argument("--interface","-i", help="Specify the interface number to use, e.g. 1 for hci1", metavar='N', type=int, default=0)
+parser.add_argument("--mqttconfigfile","-mcf", help="Specify a configurationfile for MQTT broker")
 
 
 rounding = parser.add_argument_group("Rounding and debouncing")
@@ -232,8 +233,8 @@ rounding.add_argument("--round","-r", help="Round temperature to one decimal pla
 callbackgroup = parser.add_argument_group("Callback related arguments")
 callbackgroup.add_argument("--callback","-call", help="Pass the path to a program/script that will be called on each new measurement")
 callbackgroup.add_argument("--httpcallback","-http", help="Pass the URL to a program/script that will be called on each new measurement")
-callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
-callbackgroup.add_argument("--callback-interval","-int", help="Only invoke callbackfunction every N seconds, e.g. 600 = 10 minutes",type=int, default=0)
+callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callback function",metavar='N', type=int, default=0)
+callbackgroup.add_argument("--callback-interval","-int", help="Only invoke callback function every N seconds, e.g. 600 = 10 minutes",type=int, default=0)
 callbackgroup.add_argument("--influxdb","-infl", help="Optimize for writing data to influxdb,1 timestamp optimization, 2 integer optimization",metavar='N', type=int, default=0)
 callbackgroup.add_argument("--battery","-b", help="Pass the battery level to callback", metavar='', type=int, nargs='?', const=1)
 callbackgroup.add_argument("--rssi","-rs", help="Report RSSI via callback",action='store_true')
@@ -394,8 +395,6 @@ try:
 
 				# Battery level (%)
 				if type_id == "01":
-					if i + 2 > len(payload):
-						break
 					battery = int(payload[i:i+2], 16)
 					i += 2
 
@@ -418,25 +417,21 @@ try:
 					i += 4
 
 				else:
-					if i + 2 > len(payload):
-						break
+					# Unknown type, skip
+					#print(f"Unknown Type: {type_id} → Value {payload[i:i+4]}")
 					i += 2
-
-				# else:
-				# 	# Unknown type, skip
-				# 	print(f"Unknown Type: {type_id} → Value {payload[i:i+4]}")
-				# 	i += 2
 
 			cached = sensor_cache.get(mac, {})
 
 			if battery is not None:
-				print("Packet type: Battery")
+				#print("Packet type: Battery")
 				cached["battery"] = battery
-				if voltage is not None:       # pvvx firmware seems to have bug. In rare occasions battery-level paket is received, but without voltage
+			
+			if voltage is not None:       # pvvx firmware seems to have bug. In rare occasions battery-level paket is received, but without voltage
 					cached["voltage"] = voltage
 				
-			elif temperature is not None or humidity is not None:
-				print("Packet type: Data")
+			if temperature is not None or humidity is not None:
+				#print("Packet type: Data")
 				cached["temperature"] = temperature
 				cached["humidity"] = humidity
 
