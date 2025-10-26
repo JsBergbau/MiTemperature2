@@ -423,14 +423,14 @@ try:
 			cached = sensor_cache.get(mac, {})
 
 			if battery is not None:
-				#print("Packet type: Battery")
+				print("Packet type: Battery")
 				cached["battery"] = battery
 			
 			if voltage is not None:       # pvvx firmware seems to have bug. In rare occasions battery-level paket is received, but without voltage
 					cached["voltage"] = voltage
 				
 			if temperature is not None or humidity is not None:
-				#print("Packet type: Data")
+				print("Packet type: Data")
 				cached["temperature"] = temperature
 				cached["humidity"] = humidity
 
